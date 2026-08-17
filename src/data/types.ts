@@ -11,101 +11,52 @@ export type RiskTypeId =
   | "disaster"
   | "epidemic";
 
-export type SourceStatus = "connected" | "pending" | "degraded";
+export type RawStatus = "new" | "extracted" | "ignored";
 
 export interface SourceClass {
   id: SourceClassId;
   name: string;
   code: string;
   description: string;
-  feedCount: number;
-  status: SourceStatus;
-  latency: string;
-  todayCount: number;
 }
 
-export type EntryStatus = "pending" | "reviewed" | "escalated" | "dismissed";
-
-export interface FeedEntry {
+export interface RawItem {
   id: string;
-  title: string;
-  summary: string;
   sourceClass: SourceClassId;
-  sourceName: string;
+  /** 账号 / 媒体 / 机构名 */
+  author: string;
+  handle: string;
+  text: string;
+  publishedAt: string;
+  lang: string;
   url: string;
-  publishedAt: string;
-  region: string;
-  riskType: RiskTypeId;
-  level: RiskLevel;
-  /** 信息可信度：A 高 / B 中 / C 待核验 */
-  confidence: "A" | "B" | "C";
-  status: EntryStatus;
-  topicSlug?: string;
-  aiSummary: string;
-  aiEntities: string[];
-  analystNote?: string;
+  riskType?: RiskTypeId;
+  topic?: string;
+  region?: string;
+  status: RawStatus;
+  eventId?: string;
 }
 
-export interface Channel {
-  id: RiskTypeId;
-  name: string;
-  code: string;
-  summary: string;
-  level: RiskLevel;
-  activeAlerts: number;
-  entries24h: number;
-  boundSources: SourceClassId[];
-  regions: { region: string; level: RiskLevel; note: string; updated: string }[];
-  timeline: { date: string; text: string }[];
-}
-
-export interface Topic {
-  slug: string;
-  name: string;
-  code: string;
-  riskType: RiskTypeId;
-  level: RiskLevel;
-  owner: string;
-  updated: string;
-  overview: string;
-  judgements: string[];
-  actors: { name: string; role: string; posture: string }[];
-  scenarios: { name: string; probability: string; note: string }[];
-  timeline: { date: string; text: string }[];
-}
-
-export type DispatchChannelId = "email" | "wecom" | "dingtalk" | "webhook" | "sms";
-
-export interface DispatchChannel {
-  id: DispatchChannelId;
-  name: string;
-  target: string;
-  /** pending = 渠道待接入 */
-  status: "pending" | "connected";
-}
-
-export interface DispatchRecord {
-  channel: DispatchChannelId;
-  at: string;
-  state: "simulated" | "queued" | "sent" | "failed";
-  note?: string;
-}
-
-export type AlertState = "draft" | "active" | "closed";
-
-export interface RiskAlert {
+export interface RiskEvent {
   id: string;
-  code: string;
   title: string;
-  level: RiskLevel;
-  region: string;
+  summary: string;
+  occurredAt: string;
+  occurredEnd?: string;
+  country: string;
+  area?: string;
+  city?: string;
+  /** 国家行为体 */
+  stateActors: string[];
+  /** 组织机构 */
+  organizations: string[];
+  /** 当事个人 / 主体 */
+  people: string[];
   riskType: RiskTypeId;
-  state: AlertState;
-  publishedAt: string;
-  publisher: string;
-  body: string;
-  impact: string[];
-  advice: string[];
-  sourceEntryIds: string[];
-  dispatches: DispatchRecord[];
+  level: RiskLevel;
+  confidence: "A" | "B" | "C";
+  topic?: string;
+  sourceItemIds: string[];
+  createdAt: string;
+  createdBy: string;
 }
