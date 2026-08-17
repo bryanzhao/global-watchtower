@@ -11,12 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AlertsRouteImport } from './routes/alerts'
+import { Route as BriefRouteImport } from './routes/brief'
 import { Route as ChannelsRouteImport } from './routes/channels'
 import { Route as FeedRouteImport } from './routes/feed'
 import { Route as TopicsRouteImport } from './routes/topics'
 import { Route as ChannelsIndexRouteImport } from './routes/channels.index'
 import { Route as ChannelsChannelIdRouteImport } from './routes/channels.$channelId'
 import { Route as TopicsIndexRouteImport } from './routes/topics.index'
+import { Route as TopicsTopicSlugRouteImport } from './routes/topics.$topicSlug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -26,6 +28,11 @@ const IndexRoute = IndexRouteImport.update({
 const AlertsRoute = AlertsRouteImport.update({
   id: '/alerts',
   path: '/alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BriefRoute = BriefRouteImport.update({
+  id: '/brief',
+  path: '/brief',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChannelsRoute = ChannelsRouteImport.update({
@@ -58,22 +65,31 @@ const TopicsIndexRoute = TopicsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => TopicsRoute,
 } as any)
+const TopicsTopicSlugRoute = TopicsTopicSlugRouteImport.update({
+  id: '/$topicSlug',
+  path: '/$topicSlug',
+  getParentRoute: () => TopicsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alerts': typeof AlertsRoute
+  '/brief': typeof BriefRoute
   '/channels': typeof ChannelsRouteWithChildren
   '/feed': typeof FeedRoute
   '/topics': typeof TopicsRouteWithChildren
   '/channels/$channelId': typeof ChannelsChannelIdRoute
+  '/topics/$topicSlug': typeof TopicsTopicSlugRoute
   '/channels/': typeof ChannelsIndexRoute
   '/topics/': typeof TopicsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alerts': typeof AlertsRoute
+  '/brief': typeof BriefRoute
   '/feed': typeof FeedRoute
   '/channels/$channelId': typeof ChannelsChannelIdRoute
+  '/topics/$topicSlug': typeof TopicsTopicSlugRoute
   '/channels': typeof ChannelsIndexRoute
   '/topics': typeof TopicsIndexRoute
 }
@@ -81,10 +97,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/alerts': typeof AlertsRoute
+  '/brief': typeof BriefRoute
   '/channels': typeof ChannelsRouteWithChildren
   '/feed': typeof FeedRoute
   '/topics': typeof TopicsRouteWithChildren
   '/channels/$channelId': typeof ChannelsChannelIdRoute
+  '/topics/$topicSlug': typeof TopicsTopicSlugRoute
   '/channels/': typeof ChannelsIndexRoute
   '/topics/': typeof TopicsIndexRoute
 }
@@ -93,23 +111,34 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/alerts'
+    | '/brief'
     | '/channels'
     | '/feed'
     | '/topics'
     | '/channels/$channelId'
+    | '/topics/$topicSlug'
     | '/channels/'
     | '/topics/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/alerts' | '/feed' | '/channels/$channelId' | '/channels' | '/topics'
+    | '/'
+    | '/alerts'
+    | '/brief'
+    | '/feed'
+    | '/channels/$channelId'
+    | '/topics/$topicSlug'
+    | '/channels'
+    | '/topics'
   id:
     | '__root__'
     | '/'
     | '/alerts'
+    | '/brief'
     | '/channels'
     | '/feed'
     | '/topics'
     | '/channels/$channelId'
+    | '/topics/$topicSlug'
     | '/channels/'
     | '/topics/'
   fileRoutesById: FileRoutesById
@@ -117,6 +146,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AlertsRoute: typeof AlertsRoute
+  BriefRoute: typeof BriefRoute
   ChannelsRoute: typeof ChannelsRouteWithChildren
   FeedRoute: typeof FeedRoute
   TopicsRoute: typeof TopicsRouteWithChildren
@@ -136,6 +166,13 @@ declare module '@tanstack/react-router' {
       path: '/alerts'
       fullPath: '/alerts'
       preLoaderRoute: typeof AlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brief': {
+      id: '/brief'
+      path: '/brief'
+      fullPath: '/brief'
+      preLoaderRoute: typeof BriefRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/channels': {
@@ -180,6 +217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TopicsIndexRouteImport
       parentRoute: typeof TopicsRoute
     }
+    '/topics/$topicSlug': {
+      id: '/topics/$topicSlug'
+      path: '/$topicSlug'
+      fullPath: '/topics/$topicSlug'
+      preLoaderRoute: typeof TopicsTopicSlugRouteImport
+      parentRoute: typeof TopicsRoute
+    }
   }
 }
 
@@ -198,10 +242,12 @@ const ChannelsRouteWithChildren = ChannelsRoute._addFileChildren(
 )
 
 interface TopicsRouteChildren {
+  TopicsTopicSlugRoute: typeof TopicsTopicSlugRoute
   TopicsIndexRoute: typeof TopicsIndexRoute
 }
 
 const TopicsRouteChildren: TopicsRouteChildren = {
+  TopicsTopicSlugRoute: TopicsTopicSlugRoute,
   TopicsIndexRoute: TopicsIndexRoute,
 }
 
@@ -211,6 +257,7 @@ const TopicsRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlertsRoute: AlertsRoute,
+  BriefRoute: BriefRoute,
   ChannelsRoute: ChannelsRouteWithChildren,
   FeedRoute: FeedRoute,
   TopicsRoute: TopicsRouteWithChildren,
