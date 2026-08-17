@@ -55,7 +55,7 @@ function RawFeedWorkbench() {
           (topicFilter === "all" ||
             (topicFilter === "none" ? !i.topic : i.topic === topicFilter)) &&
           (statusFilter === "all" || i.status === statusFilter),
-      ),
+      ).sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
     [tabItems, typeFilter, topicFilter, statusFilter],
   );
 
