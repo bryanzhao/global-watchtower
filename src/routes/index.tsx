@@ -1,202 +1,329 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { RefreshCw } from "lucide-react";
 import { PageShell } from "@/components/platform/PageShell";
-import { KpiCard, Panel, PendingTag, SectionTitle, SourceBadge, Tag } from "@/components/platform/Primitives";
-import { RiskBadge } from "@/components/platform/RiskBadge";
-import {
-  channels,
-  feedEntries,
-  regionOverview,
-  riskAlerts,
-  sourceClasses,
-} from "@/data/platform";
+import { Panel, SourceLink, Tag } from "@/components/platform/Primitives";
+import { ExtractDrawer } from "@/components/platform/ExtractDrawer";
+import { riskTypeLabel, riskTypes, sourceClasses, topics } from "@/data/platform";
+import type { RawStatus, RiskTypeId, SourceClassId } from "@/data/types";
+import { useWorkbench } from "@/state/workbench";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "全球风险总览 · 全球安全风险监测平台" },
+      { title: "原始信息流工作台 · 全球安全风险监测平台" },
       {
         name: "description",
-        content: "全球安全风险态势总览：预警数量、地区风险分布、风险频道与四类信源接入状态。",
+        content:
+          "四类原始信息流（社交媒体、主流媒体、权威机构、自建 OSINT）按标签分流的时间线工作台，支持勾选多条合并提取为结构化风险事件。",
       },
-      { property: "og:title", content: "全球风险总览 · 全球安全风险监测平台" },
+      { property: "og:title", content: "原始信息流工作台 · 全球安全风险监测平台" },
       {
         property: "og:description",
-        content: "实时汇总全球战争、恐袭、动荡、骚乱、治安、灾害与传染病风险态势。",
+        content: "分析师与 AI 共同浏览原始信息流，从中提取并合并出结构化风险事件。",
       },
     ],
   }),
-  component: Overview,
+  component: RawFeedWorkbench;
 });
 
-function Overview() {
-  const activeAlerts = riskAlerts.filter((a) => a.state === "active");
-  const pending = feedEntries.filter((e) => e.status === "pending");
-  const highRegions = regionOverview.filter((r) => r.level === "high");
-  const todayEntries = sourceClasses.reduce((sum, s) => sum + s.todayCount, 0);
+const statusLabel: Record<RawStatus, string> = {
+  new: "未处理",
+  extracted: "已提取",
+  ignored: "已忽略",
+};
+
+function RawFeedWorkbench() {
+  const { items, lastRefresh, pendingIncoming, refresh, ignoreItems, restoreItems, createEvent } =
+    useWorkbench();
+  const [tab, setTab] = useState<SourceClassId>("social");
+  const [typeFilter, setTypeFilter] = useState<RiskTypeId | "all">("all");
+  const [topicFilter, setTopicFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<RawStatus | "all">("all");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [drawerIds, setDrawerIds] = useState<string[] | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const tabItems = useMemo(() => items.filter((i) => i.sourceClass === tab), [items, tab]);
+
+  const visible = useMemo(
+    () =>
+      tabItems.filter(
+        (i) =>
+          (typeFilter === "all" || i.riskType === typeFilter) &&
+          (topicFilter === "all" ||
+            (topicFilter === "none" ? !i.topic : i.topic === topicFilter)) &&
+          (statusFilter === "all" || i.status === statusFilter),
+      ),
+    [tabItems, typeFilter, topicFilter, statusFilter],
+  );
+
+  const toggle = (id: string) =>
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const drawerItems = drawerIds
+    ? (drawerIds.map((id) => items.find((i) => i.id === id)!).filter(Boolean) as typeof items)
+    : [];
 
   return (
     <PageShell
-      eyebrow="Global Risk Overview"
-      title="全球风险总览"
-      description="汇总四类信源接入状态、各风险频道态势与生效中的正式预警，作为每日值班与研判的起点。"
+      eyebrow="Raw Feeds"
+      title="原始信息流工作台"
+      description="四类信源各自成流，互不混合。AI 与分析师持续刷新浏览，从中识别风险，勾选一条或多条合并提取为结构化风险事件。"
+      actions={
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">最近刷新 {lastRefresh}</span>
+          <button
+            type="button"
+            onClick={() => {
+              const added = refresh();
+              setToast(added ? `已拉取 ${added} 条新信息` : "暂无更多新信息");
+            }}
+            className="inline-flex items-center gap-1.5 rounded-sm border border-border px-3 py-1.5 text-sm transition-colors hover:bg-secondary"
+          >
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+            刷新
+            {pendingIncoming > 0 ? (
+              <span className="ml-1 rounded-sm bg-primary/10 px-1.5 text-xs text-primary tabular-nums">
+                {pendingIncoming}
+              </span>
+            ) : null}
+          </button>
+        </div>
+      }
     >
-      <section className="grid gap-4 md:grid-cols-4">
-        <KpiCard label="生效中预警" value={activeAlerts.length} unit="条" delta="较昨日 +1" deltaTone="up-bad" source="预警频道" />
-        <KpiCard label="高风险地区" value={highRegions.length} unit="个" delta="较上周 +1" deltaTone="up-bad" source="地区研判" />
-        <KpiCard label="24 小时新增信息" value={todayEntries} unit="条" delta="较昨日 +8.4%" deltaTone="neutral" source="四类信源" />
-        <KpiCard label="待研判条目" value={pending.length} unit="条" delta="需今日清零" deltaTone="neutral" source="信息流工作台" />
-      </section>
+      {toast ? (
+        <p className="mb-4 rounded-sm border border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
+          {toast}
+        </p>
+      ) : null}
 
-      <section className="mt-6 grid gap-6 lg:grid-cols-[3fr_2fr]">
-        <div>
-          <SectionTitle aside="按地区研判 · 08-17 08:00 UTC">全球风险等级分布</SectionTitle>
-          <Panel className="overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-surface">
-                  <tr className="text-xs tracking-wider text-muted-foreground uppercase">
-                    <th className="px-5 py-3 text-left font-medium">地区</th>
-                    <th className="px-5 py-3 text-left font-medium">风险等级</th>
-                    <th className="px-5 py-3 text-left font-medium">主要驱动因素</th>
-                    <th className="px-5 py-3 text-right font-medium">生效预警</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {regionOverview.map((row) => (
-                    <tr key={row.region}>
-                      <td className="px-5 py-3 text-sm whitespace-nowrap">{row.region}</td>
-                      <td className="px-5 py-3 whitespace-nowrap">
-                        <RiskBadge level={row.level} />
-                      </td>
-                      <td className="px-5 py-3 text-sm text-muted-foreground">{row.drivers}</td>
-                      <td className="px-5 py-3 text-right text-sm tabular-nums">{row.alerts}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Panel>
-        </div>
-
-        <div>
-          <SectionTitle aside={<Link to="/alerts" className="text-primary transition-colors hover:underline">查看全部</Link>}>
-            生效中的正式预警
-          </SectionTitle>
-          <Panel className="divide-y divide-border">
-            {activeAlerts.map((alert) => (
-              <Link
-                key={alert.id}
-                to="/alerts"
-                className="block px-5 py-3 transition-colors hover:bg-secondary"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-medium">{alert.title}</p>
-                  <RiskBadge level={alert.level} />
-                </div>
-                <p className="mt-1 font-mono text-xs text-muted-foreground">
-                  {alert.code} · {alert.region} · {alert.publishedAt}
-                </p>
-              </Link>
-            ))}
-          </Panel>
-        </div>
-      </section>
-
-      <section className="mt-6">
-        <SectionTitle aside="按风险类型组织的常规监测">风险频道</SectionTitle>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          {channels.map((channel) => (
-            <Link
-              key={channel.id}
-              to="/channels/$channelId"
-              params={{ channelId: channel.id }}
-              className="rounded-md border border-border bg-card p-4 transition-colors hover:bg-secondary"
+      <div className="mb-5 flex flex-wrap gap-1 border-b border-border">
+        {sourceClasses.map((s) => {
+          const count = items.filter((i) => i.sourceClass === s.id).length;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => {
+                setTab(s.id);
+                setSelected([]);
+              }}
+              className={cn(
+                "-mb-px border-b-2 px-4 py-2 text-sm transition-colors",
+                s.id === tab
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
             >
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-semibold">{channel.name}</p>
-                <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
-              </div>
-              <p className="mt-1 text-[10px] font-semibold tracking-[0.2em] text-primary uppercase">
-                {channel.code}
-              </p>
-              <div className="mt-3 flex items-center gap-2">
-                <RiskBadge level={channel.level} />
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  24h {channel.entries24h} 条 · 预警 {channel.activeAlerts}
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+              {s.name}
+              <span className="ml-1.5 text-xs tabular-nums">{count}</span>
+            </button>
+          );
+        })}
+      </div>
 
-      <section className="mt-6">
-        <SectionTitle aside="信息流由外部 API 接入，本站负责研判与发布">四类信源接入状态</SectionTitle>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          {sourceClasses.map((source) => (
-            <div key={source.id} className="rounded-md border border-border bg-card p-4">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold">{source.name}</p>
-                {source.status === "connected" ? (
-                  <Tag>已接入</Tag>
-                ) : source.status === "degraded" ? (
-                  <span className="inline-block rounded-sm border border-destructive/30 bg-destructive/15 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-destructive">
-                    延迟
+      <p className="mb-4 text-xs text-muted-foreground">{sourceClasses.find((s) => s.id === tab)!.description}</p>
+
+      <div className="mb-4 flex flex-wrap items-center gap-4">
+        <FilterRow
+          label="风险类型"
+          value={typeFilter}
+          onChange={(v) => setTypeFilter(v as RiskTypeId | "all")}
+          options={[
+            { value: "all", label: "全部" },
+            ...riskTypes.map((t) => ({ value: t, label: riskTypeLabel[t] })),
+          ]}
+        />
+        <FilterRow
+          label="主题"
+          value={topicFilter}
+          onChange={setTopicFilter}
+          options={[
+            { value: "all", label: "全部" },
+            { value: "none", label: "无主题" },
+            ...topics.map((t) => ({ value: t, label: t })),
+          ]}
+        />
+        <FilterRow
+          label="状态"
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v as RawStatus | "all")}
+          options={[
+            { value: "all", label: "全部" },
+            { value: "new", label: "未处理" },
+            { value: "extracted", label: "已提取" },
+            { value: "ignored", label: "已忽略" },
+          ]}
+        />
+      </div>
+
+      <Panel className="p-5 pb-24">
+        {visible.length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            当前筛选条件下没有条目。
+          </p>
+        ) : (
+          <ol className="relative border-l border-border pl-6">
+            {visible.map((item) => (
+              <li key={item.id} className="relative pb-6 last:pb-0">
+                <span
+                  className={cn(
+                    "absolute top-1.5 -left-[26px] h-2.5 w-2.5 rounded-full border-2 border-background",
+                    item.status === "extracted"
+                      ? "bg-primary"
+                      : item.status === "ignored"
+                        ? "bg-muted-foreground/40"
+                        : "bg-destructive",
+                  )}
+                  aria-hidden
+                />
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                    {item.publishedAt}
                   </span>
-                ) : (
-                  <PendingTag />
-                )}
-              </div>
-              <p className="mt-1 text-[10px] font-semibold tracking-[0.2em] text-primary uppercase">
-                {source.code}
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">{source.description}</p>
-              <p className="mt-3 font-mono text-xs text-muted-foreground">
-                信源 {source.feedCount} 个 · 今日 {source.todayCount} 条 · 时效 {source.latency}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
+                  <span className="text-xs text-muted-foreground">{statusLabel[item.status]}</span>
+                  {item.eventId ? (
+                    <span className="font-mono text-xs text-primary">{item.eventId}</span>
+                  ) : null}
+                </div>
+                <div
+                  className={cn(
+                    "rounded-md border border-border p-4 transition-colors",
+                    selected.includes(item.id) && "border-primary bg-primary/5",
+                    item.status === "ignored" && "opacity-60",
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(item.id)}
+                      onChange={() => toggle(item.id)}
+                      aria-label={`选择 ${item.id}`}
+                      className="mt-1 h-4 w-4 accent-[oklch(0.34_0.07_240)]"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <span className="text-sm font-semibold">{item.author}</span>
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {item.handle}
+                        </span>
+                        <span className="font-mono text-xs text-muted-foreground">{item.id}</span>
+                      </div>
+                      <p className="mt-1.5 text-sm">{item.text}</p>
+                      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                        {item.riskType ? <Tag>{riskTypeLabel[item.riskType]}</Tag> : null}
+                        {item.topic ? <Tag>{item.topic}</Tag> : null}
+                        {item.region ? <Tag>{item.region}</Tag> : null}
+                        <Tag>{item.lang}</Tag>
+                        <span className="text-xs">
+                          <SourceLink href={item.url}>原文</SourceLink>
+                        </span>
+                        <span className="ml-auto flex gap-2">
+                          {item.status === "ignored" ? (
+                            <MiniButton onClick={() => restoreItems([item.id])}>恢复</MiniButton>
+                          ) : (
+                            <>
+                              <MiniButton onClick={() => setDrawerIds([item.id])}>提取</MiniButton>
+                              <MiniButton onClick={() => ignoreItems([item.id])}>忽略</MiniButton>
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </Panel>
 
-      <section className="mt-6">
-        <SectionTitle aside={<Link to="/feed" className="text-primary transition-colors hover:underline">进入信息流工作台</Link>}>
-          今日重点信息
-        </SectionTitle>
-        <Panel className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-surface">
-                <tr className="text-xs tracking-wider text-muted-foreground uppercase">
-                  <th className="px-5 py-3 text-left font-medium">时间</th>
-                  <th className="px-5 py-3 text-left font-medium">标题</th>
-                  <th className="px-5 py-3 text-left font-medium">信源类别</th>
-                  <th className="px-5 py-3 text-left font-medium">地区</th>
-                  <th className="px-5 py-3 text-left font-medium">等级</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {feedEntries.slice(0, 6).map((entry) => (
-                  <tr key={entry.id}>
-                    <td className="px-5 py-3 font-mono text-xs whitespace-nowrap text-muted-foreground">
-                      {entry.publishedAt}
-                    </td>
-                    <td className="px-5 py-3 text-sm">{entry.title}</td>
-                    <td className="px-5 py-3 whitespace-nowrap">
-                      <SourceBadge id={entry.sourceClass} />
-                    </td>
-                    <td className="px-5 py-3 text-sm whitespace-nowrap">{entry.region}</td>
-                    <td className="px-5 py-3 whitespace-nowrap">
-                      <RiskBadge level={entry.level} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
-      </section>
+      {selected.length > 0 ? (
+        <div className="sticky bottom-4 z-30 mt-4 flex flex-wrap items-center gap-3 rounded-md border border-primary/40 bg-background px-4 py-3">
+          <span className="text-sm font-medium">已选 {selected.length} 条</span>
+          <button
+            type="button"
+            onClick={() => setDrawerIds(selected)}
+            className="rounded-sm bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            {selected.length > 1 ? "合并提取为风险事件" : "提取为风险事件"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              ignoreItems(selected);
+              setSelected([]);
+            }}
+            className="rounded-sm border border-border px-3 py-1.5 text-sm transition-colors hover:bg-secondary"
+          >
+            忽略
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelected([])}
+            className="rounded-sm px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary"
+          >
+            取消选择
+          </button>
+        </div>
+      ) : null}
+
+      {drawerIds && drawerItems.length > 0 ? (
+        <ExtractDrawer
+          items={drawerItems}
+          onRemoveItem={(id) => setDrawerIds((prev) => (prev ?? []).filter((x) => x !== id))}
+          onCancel={() => setDrawerIds(null)}
+          onSubmit={(draft) => {
+            const event = createEvent(draft);
+            setDrawerIds(null);
+            setSelected([]);
+            setToast(`已生成风险事件 ${event.id}，可在风险信息流查看`);
+          }}
+        />
+      ) : null}
     </PageShell>
+  );
+}
+
+function MiniButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-sm border border-border px-2 py-1 text-xs transition-colors hover:bg-secondary"
+    >
+      {children}
+    </button>
+  );
+}
+
+function FilterRow({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <label className="flex items-center gap-2 text-xs">
+      <span className="tracking-wider text-muted-foreground uppercase">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-sm border border-border bg-background px-2 py-1 text-sm"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
