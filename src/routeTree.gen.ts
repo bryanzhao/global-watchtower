@@ -10,33 +10,116 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AlertsRouteImport } from './routes/alerts'
+import { Route as ChannelsRouteImport } from './routes/channels'
+import { Route as FeedRouteImport } from './routes/feed'
+import { Route as TopicsRouteImport } from './routes/topics'
+import { Route as ChannelsIndexRouteImport } from './routes/channels.index'
+import { Route as ChannelsChannelIdRouteImport } from './routes/channels.$channelId'
+import { Route as TopicsIndexRouteImport } from './routes/topics.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AlertsRoute = AlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChannelsRoute = ChannelsRouteImport.update({
+  id: '/channels',
+  path: '/channels',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeedRoute = FeedRouteImport.update({
+  id: '/feed',
+  path: '/feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TopicsRoute = TopicsRouteImport.update({
+  id: '/topics',
+  path: '/topics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChannelsIndexRoute = ChannelsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ChannelsRoute,
+} as any)
+const ChannelsChannelIdRoute = ChannelsChannelIdRouteImport.update({
+  id: '/$channelId',
+  path: '/$channelId',
+  getParentRoute: () => ChannelsRoute,
+} as any)
+const TopicsIndexRoute = TopicsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TopicsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/alerts': typeof AlertsRoute
+  '/channels': typeof ChannelsRouteWithChildren
+  '/feed': typeof FeedRoute
+  '/topics': typeof TopicsRouteWithChildren
+  '/channels/$channelId': typeof ChannelsChannelIdRoute
+  '/channels/': typeof ChannelsIndexRoute
+  '/topics/': typeof TopicsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/alerts': typeof AlertsRoute
+  '/feed': typeof FeedRoute
+  '/channels/$channelId': typeof ChannelsChannelIdRoute
+  '/channels': typeof ChannelsIndexRoute
+  '/topics': typeof TopicsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/alerts': typeof AlertsRoute
+  '/channels': typeof ChannelsRouteWithChildren
+  '/feed': typeof FeedRoute
+  '/topics': typeof TopicsRouteWithChildren
+  '/channels/$channelId': typeof ChannelsChannelIdRoute
+  '/channels/': typeof ChannelsIndexRoute
+  '/topics/': typeof TopicsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/alerts'
+    | '/channels'
+    | '/feed'
+    | '/topics'
+    | '/channels/$channelId'
+    | '/channels/'
+    | '/topics/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    '/' | '/alerts' | '/feed' | '/channels/$channelId' | '/channels' | '/topics'
+  id:
+    | '__root__'
+    | '/'
+    | '/alerts'
+    | '/channels'
+    | '/feed'
+    | '/topics'
+    | '/channels/$channelId'
+    | '/channels/'
+    | '/topics/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AlertsRoute: typeof AlertsRoute
+  ChannelsRoute: typeof ChannelsRouteWithChildren
+  FeedRoute: typeof FeedRoute
+  TopicsRoute: typeof TopicsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +131,89 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/alerts': {
+      id: '/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/channels': {
+      id: '/channels'
+      path: '/channels'
+      fullPath: '/channels'
+      preLoaderRoute: typeof ChannelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/feed': {
+      id: '/feed'
+      path: '/feed'
+      fullPath: '/feed'
+      preLoaderRoute: typeof FeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/topics': {
+      id: '/topics'
+      path: '/topics'
+      fullPath: '/topics'
+      preLoaderRoute: typeof TopicsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/channels/': {
+      id: '/channels/'
+      path: '/'
+      fullPath: '/channels/'
+      preLoaderRoute: typeof ChannelsIndexRouteImport
+      parentRoute: typeof ChannelsRoute
+    }
+    '/channels/$channelId': {
+      id: '/channels/$channelId'
+      path: '/$channelId'
+      fullPath: '/channels/$channelId'
+      preLoaderRoute: typeof ChannelsChannelIdRouteImport
+      parentRoute: typeof ChannelsRoute
+    }
+    '/topics/': {
+      id: '/topics/'
+      path: '/'
+      fullPath: '/topics/'
+      preLoaderRoute: typeof TopicsIndexRouteImport
+      parentRoute: typeof TopicsRoute
+    }
   }
 }
 
+interface ChannelsRouteChildren {
+  ChannelsChannelIdRoute: typeof ChannelsChannelIdRoute
+  ChannelsIndexRoute: typeof ChannelsIndexRoute
+}
+
+const ChannelsRouteChildren: ChannelsRouteChildren = {
+  ChannelsChannelIdRoute: ChannelsChannelIdRoute,
+  ChannelsIndexRoute: ChannelsIndexRoute,
+}
+
+const ChannelsRouteWithChildren = ChannelsRoute._addFileChildren(
+  ChannelsRouteChildren,
+)
+
+interface TopicsRouteChildren {
+  TopicsIndexRoute: typeof TopicsIndexRoute
+}
+
+const TopicsRouteChildren: TopicsRouteChildren = {
+  TopicsIndexRoute: TopicsIndexRoute,
+}
+
+const TopicsRouteWithChildren =
+  TopicsRoute._addFileChildren(TopicsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AlertsRoute: AlertsRoute,
+  ChannelsRoute: ChannelsRouteWithChildren,
+  FeedRoute: FeedRoute,
+  TopicsRoute: TopicsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
