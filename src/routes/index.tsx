@@ -25,7 +25,7 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  component: RawFeedWorkbench;
+  component: RawFeedWorkbench,
 });
 
 const statusLabel: Record<RawStatus, string> = {
