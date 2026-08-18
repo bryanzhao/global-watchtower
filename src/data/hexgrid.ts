@@ -162,8 +162,8 @@ export interface GridHex {
 
 export const gridHexes: GridHex[] = Object.entries(packed).flatMap(([code, s]) =>
   s.split(" ").map((p) => {
-    const [col, row] = p.split(",").map(Number);
-    return { code, col, row };
+    const parts = p.split(",");
+    return { code, col: Number(parts[0]), row: Number(parts[1]) };
   }),
 );
 
