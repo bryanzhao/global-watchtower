@@ -1,10 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Globe2, ListFilter, ShieldAlert } from "lucide-react";
+import { Flag, Globe2, LayoutDashboard, ListFilter, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { to: "/", label: "原始信息流", icon: ListFilter, exact: true },
+  { to: "/", label: "全局概览", icon: LayoutDashboard, exact: true },
+  { to: "/raw", label: "原始信息流", icon: ListFilter, exact: false },
   { to: "/risk", label: "风险信息流", icon: ShieldAlert, exact: false },
+  { to: "/countries", label: "国别", icon: Flag, exact: false },
 ] as const;
 
 export function SiteHeader() {

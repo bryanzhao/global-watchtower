@@ -1,329 +1,172 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { RefreshCw } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import { PageShell } from "@/components/platform/PageShell";
-import { Panel, SourceLink, Tag } from "@/components/platform/Primitives";
-import { ExtractDrawer } from "@/components/platform/ExtractDrawer";
-import { riskTypeLabel, riskTypes, sourceClasses, topics } from "@/data/platform";
-import type { RawStatus, RiskTypeId, SourceClassId } from "@/data/types";
+import { Panel, SectionTitle, Tag } from "@/components/platform/Primitives";
+import { RiskBadge } from "@/components/platform/RiskBadge";
+import { HexWorldMap } from "@/components/platform/HexWorldMap";
+import { riskTypeLabel } from "@/data/platform";
+import { topicProfiles, topicStatusLabel } from "@/data/topics";
+import {
+  aggregateByCountry,
+  sortByTimeDesc,
+  timeWindowLabel,
+  withinWindow,
+  type TimeWindow,
+} from "@/data/analytics";
 import { useWorkbench } from "@/state/workbench";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "原始信息流工作台 · 全球安全风险监测平台" },
+      { title: "全局概览 · 全球安全风险监测平台" },
       {
         name: "description",
         content:
-          "四类原始信息流（社交媒体、主流媒体、权威机构、自建 OSINT）按标签分流的时间线工作台，支持勾选多条合并提取为结构化风险事件。",
+          "以蜂窝世界地图展示过去 24 小时各国已确认风险事件分布，并按重大议题提供局势概览卡片，一键进入主题与国别详情。",
       },
-      { property: "og:title", content: "原始信息流工作台 · 全球安全风险监测平台" },
+      { property: "og:title", content: "全局概览 · 全球安全风险监测平台" },
       {
         property: "og:description",
-        content: "分析师与 AI 共同浏览原始信息流，从中提取并合并出结构化风险事件。",
+        content: "地图 + 重大议题卡片的全局风险概览，数据来自结构化风险信息流。",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: RawFeedWorkbench,
+  component: Overview,
 });
 
-const statusLabel: Record<RawStatus, string> = {
-  new: "未处理",
-  extracted: "已提取",
-  ignored: "已忽略",
-};
+function Overview() {
+  const { events } = useWorkbench();
+  const navigate = useNavigate();
+  const [win, setWin] = useState<TimeWindow>(24);
 
-function RawFeedWorkbench() {
-  const { items, lastRefresh, pendingIncoming, refresh, ignoreItems, restoreItems, createEvent } =
-    useWorkbench();
-  const [tab, setTab] = useState<SourceClassId>("social");
-  const [typeFilter, setTypeFilter] = useState<RiskTypeId | "all">("all");
-  const [topicFilter, setTopicFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<RawStatus | "all">("all");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [drawerIds, setDrawerIds] = useState<string[] | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const aggregates = useMemo(() => aggregateByCountry(events, win), [events, win]);
+  const windowed = useMemo(() => events.filter((e) => withinWindow(e, win)), [events, win]);
 
-  const tabItems = useMemo(() => items.filter((i) => i.sourceClass === tab), [items, tab]);
-
-  const visible = useMemo(
-    () =>
-      tabItems.filter(
-        (i) =>
-          (typeFilter === "all" || i.riskType === typeFilter) &&
-          (topicFilter === "all" ||
-            (topicFilter === "none" ? !i.topic : i.topic === topicFilter)) &&
-          (statusFilter === "all" || i.status === statusFilter),
-      ).sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
-    [tabItems, typeFilter, topicFilter, statusFilter],
+  const topCountries = useMemo(
+    () => [...aggregates.values()].sort((a, b) => b.count - a.count).slice(0, 6),
+    [aggregates],
   );
-
-  const toggle = (id: string) =>
-    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-
-  const drawerItems = drawerIds
-    ? (drawerIds.map((id) => items.find((i) => i.id === id)!).filter(Boolean) as typeof items)
-    : [];
 
   return (
     <PageShell
-      eyebrow="Raw Feeds"
-      title="原始信息流工作台"
-      description="四类信源各自成流，互不混合。AI 与分析师持续刷新浏览，从中识别风险，勾选一条或多条合并提取为结构化风险事件。"
+      eyebrow="Global Overview"
+      title="全局概览"
+      description="左侧地图按国家聚合已确认风险事件数量与最高风险等级，右侧为当前在跟踪的重大议题。所有数据均来自风险信息流，不含未经确认的原始信息。"
       actions={
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground">最近刷新 {lastRefresh}</span>
-          <button
-            type="button"
-            onClick={() => {
-              const added = refresh();
-              setToast(added ? `已拉取 ${added} 条新信息` : "暂无更多新信息");
-            }}
-            className="inline-flex items-center gap-1.5 rounded-sm border border-border px-3 py-1.5 text-sm transition-colors hover:bg-secondary"
-          >
-            <RefreshCw className="h-3.5 w-3.5" aria-hidden />
-            刷新
-            {pendingIncoming > 0 ? (
-              <span className="ml-1 rounded-sm bg-primary/10 px-1.5 text-xs text-primary tabular-nums">
-                {pendingIncoming}
-              </span>
-            ) : null}
-          </button>
+        <div className="flex items-center gap-1 rounded-sm border border-border p-0.5">
+          {([24, 168] as TimeWindow[]).map((w) => (
+            <button
+              key={w}
+              type="button"
+              onClick={() => setWin(w)}
+              className={cn(
+                "rounded-sm px-3 py-1 text-xs transition-colors",
+                w === win ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary",
+              )}
+            >
+              {timeWindowLabel[w]}
+            </button>
+          ))}
         </div>
       }
     >
-      {toast ? (
-        <p className="mb-4 rounded-sm border border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
-          {toast}
-        </p>
-      ) : null}
-
-      <div className="mb-5 flex flex-wrap gap-1 border-b border-border">
-        {sourceClasses.map((s) => {
-          const count = items.filter((i) => i.sourceClass === s.id).length;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => {
-                setTab(s.id);
-                setSelected([]);
-              }}
-              className={cn(
-                "-mb-px border-b-2 px-4 py-2 text-sm transition-colors",
-                s.id === tab
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {s.name}
-              <span className="ml-1.5 text-xs tabular-nums">{count}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <p className="mb-4 text-xs text-muted-foreground">{sourceClasses.find((s) => s.id === tab)!.description}</p>
-
-      <div className="mb-4 flex flex-wrap items-center gap-4">
-        <FilterRow
-          label="风险类型"
-          value={typeFilter}
-          onChange={(v) => setTypeFilter(v as RiskTypeId | "all")}
-          options={[
-            { value: "all", label: "全部" },
-            ...riskTypes.map((t) => ({ value: t, label: riskTypeLabel[t] })),
-          ]}
-        />
-        <FilterRow
-          label="主题"
-          value={topicFilter}
-          onChange={setTopicFilter}
-          options={[
-            { value: "all", label: "全部" },
-            { value: "none", label: "无主题" },
-            ...topics.map((t) => ({ value: t, label: t })),
-          ]}
-        />
-        <FilterRow
-          label="状态"
-          value={statusFilter}
-          onChange={(v) => setStatusFilter(v as RawStatus | "all")}
-          options={[
-            { value: "all", label: "全部" },
-            { value: "new", label: "未处理" },
-            { value: "extracted", label: "已提取" },
-            { value: "ignored", label: "已忽略" },
-          ]}
-        />
-      </div>
-
-      <Panel className="p-5 pb-24">
-        {visible.length === 0 ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">
-            当前筛选条件下没有条目。
-          </p>
-        ) : (
-          <ol className="relative border-l border-border pl-6">
-            {visible.map((item) => (
-              <li key={item.id} className="relative pb-6 last:pb-0">
-                <span
-                  className={cn(
-                    "absolute top-1.5 -left-[26px] h-2.5 w-2.5 rounded-full border-2 border-background",
-                    item.status === "extracted"
-                      ? "bg-primary"
-                      : item.status === "ignored"
-                        ? "bg-muted-foreground/40"
-                        : "bg-destructive",
+      <div className="grid gap-5 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Panel className="p-4">
+            <HexWorldMap
+              aggregates={aggregates}
+              windowLabel={timeWindowLabel[win]}
+              onSelect={(code) => navigate({ to: "/countries/$code", params: { code } })}
+            />
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <SectionTitle>事件最集中国家</SectionTitle>
+                <ul className="space-y-1.5">
+                  {topCountries.length === 0 ? (
+                    <li className="text-sm text-muted-foreground">该时间窗内无已确认事件。</li>
+                  ) : (
+                    topCountries.map((c) => (
+                      <li key={c.code}>
+                        <Link
+                          to="/countries/$code"
+                          params={{ code: c.code }}
+                          className="flex items-center gap-2 rounded-sm px-2 py-1 text-sm transition-colors hover:bg-secondary"
+                        >
+                          <span className="font-mono text-xs text-muted-foreground">{c.code}</span>
+                          <span>{c.name}</span>
+                          <RiskBadge level={c.level} className="ml-auto" />
+                          <span className="w-6 text-right font-semibold tabular-nums">{c.count}</span>
+                        </Link>
+                      </li>
+                    ))
                   )}
-                  aria-hidden
-                />
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="font-mono text-xs text-muted-foreground tabular-nums">
-                    {item.publishedAt}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{statusLabel[item.status]}</span>
-                  {item.eventId ? (
-                    <span className="font-mono text-xs text-primary">{item.eventId}</span>
+                </ul>
+              </div>
+              <div>
+                <SectionTitle aside={`${windowed.length} 起`}>最新已确认事件</SectionTitle>
+                <ul className="space-y-1.5">
+                  {sortByTimeDesc(windowed)
+                    .slice(0, 5)
+                    .map((e) => (
+                      <li key={e.id} className="flex items-start gap-2 text-sm">
+                        <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                          {e.occurredAt}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">{e.title}</span>
+                        <Tag>{riskTypeLabel[e.riskType]}</Tag>
+                      </li>
+                    ))}
+                  {windowed.length === 0 ? (
+                    <li className="text-sm text-muted-foreground">暂无事件。</li>
                   ) : null}
-                </div>
-                <div
-                  className={cn(
-                    "rounded-md border border-border p-4 transition-colors",
-                    selected.includes(item.id) && "border-primary bg-primary/5",
-                    item.status === "ignored" && "opacity-60",
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(item.id)}
-                      onChange={() => toggle(item.id)}
-                      aria-label={`选择 ${item.id}`}
-                      className="mt-1 h-4 w-4 accent-[oklch(0.34_0.07_240)]"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-baseline gap-2">
-                        <span className="text-sm font-semibold">{item.author}</span>
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {item.handle}
-                        </span>
-                        <span className="font-mono text-xs text-muted-foreground">{item.id}</span>
-                      </div>
-                      <p className="mt-1.5 text-sm">{item.text}</p>
-                      <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                        {item.riskType ? <Tag>{riskTypeLabel[item.riskType]}</Tag> : null}
-                        {item.topic ? <Tag>{item.topic}</Tag> : null}
-                        {item.region ? <Tag>{item.region}</Tag> : null}
-                        <Tag>{item.lang}</Tag>
-                        <span className="text-xs">
-                          <SourceLink href={item.url}>原文</SourceLink>
-                        </span>
-                        <span className="ml-auto flex gap-2">
-                          {item.status === "ignored" ? (
-                            <MiniButton onClick={() => restoreItems([item.id])}>恢复</MiniButton>
-                          ) : (
-                            <>
-                              <MiniButton onClick={() => setDrawerIds([item.id])}>提取</MiniButton>
-                              <MiniButton onClick={() => ignoreItems([item.id])}>忽略</MiniButton>
-                            </>
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </Panel>
-
-      {selected.length > 0 ? (
-        <div className="sticky bottom-4 z-30 mt-4 flex flex-wrap items-center gap-3 rounded-md border border-primary/40 bg-background px-4 py-3">
-          <span className="text-sm font-medium">已选 {selected.length} 条</span>
-          <button
-            type="button"
-            onClick={() => setDrawerIds(selected)}
-            className="rounded-sm bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            {selected.length > 1 ? "合并提取为风险事件" : "提取为风险事件"}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              ignoreItems(selected);
-              setSelected([]);
-            }}
-            className="rounded-sm border border-border px-3 py-1.5 text-sm transition-colors hover:bg-secondary"
-          >
-            忽略
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelected([])}
-            className="rounded-sm px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary"
-          >
-            取消选择
-          </button>
+                </ul>
+              </div>
+            </div>
+          </Panel>
         </div>
-      ) : null}
 
-      {drawerIds && drawerItems.length > 0 ? (
-        <ExtractDrawer
-          items={drawerItems}
-          onRemoveItem={(id) => setDrawerIds((prev) => (prev ?? []).filter((x) => x !== id))}
-          onCancel={() => setDrawerIds(null)}
-          onSubmit={(draft) => {
-            const event = createEvent(draft);
-            setDrawerIds(null);
-            setSelected([]);
-            setToast(`已生成风险事件 ${event.id}，可在风险信息流查看`);
-          }}
-        />
-      ) : null}
+        <div className="space-y-3">
+          <SectionTitle aside="每小时刷新">重大议题</SectionTitle>
+          {topicProfiles.map((t) => {
+            const related = events.filter((e) => e.topic === t.topic && withinWindow(e, win));
+            return (
+              <Link
+                key={t.slug}
+                to="/topics/$slug"
+                params={{ slug: t.slug }}
+                className="block rounded-md border border-border bg-card p-4 transition-colors hover:border-primary/50 hover:bg-secondary/40"
+              >
+                <div className="flex items-start gap-2">
+                  <h3 className="text-sm font-semibold">{t.name}</h3>
+                  <RiskBadge level={t.level} className="ml-auto" />
+                </div>
+                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{t.headline}</p>
+                <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <Tag>{topicStatusLabel[t.status]}</Tag>
+                  <span className="tabular-nums">
+                    {timeWindowLabel[win]} {related.length} 起
+                  </span>
+                  <span className="ml-auto inline-flex items-center gap-1 text-primary">
+                    进入议题
+                    <ArrowRight className="h-3 w-3" aria-hidden />
+                  </span>
+                </div>
+                <p className="mt-1 text-[10px] text-muted-foreground">概览更新于 {t.updatedAt}</p>
+              </Link>
+            );
+          })}
+          <Link
+            to="/countries"
+            className="block rounded-md border border-dashed border-border p-3 text-center text-xs text-muted-foreground transition-colors hover:bg-secondary"
+          >
+            查看全部国别页 →
+          </Link>
+        </div>
+      </div>
     </PageShell>
-  );
-}
-
-function MiniButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-sm border border-border px-2 py-1 text-xs transition-colors hover:bg-secondary"
-    >
-      {children}
-    </button>
-  );
-}
-
-function FilterRow({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  return (
-    <label className="flex items-center gap-2 text-xs">
-      <span className="tracking-wider text-muted-foreground uppercase">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="rounded-sm border border-border bg-background px-2 py-1 text-sm"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
   );
 }

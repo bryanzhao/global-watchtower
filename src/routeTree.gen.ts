@@ -10,11 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RawRouteImport } from './routes/raw'
 import { Route as RiskRouteImport } from './routes/risk'
+import { Route as CountriesIndexRouteImport } from './routes/countries.index'
+import { Route as CountriesCodeRouteImport } from './routes/countries.$code'
+import { Route as TopicsSlugRouteImport } from './routes/topics.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RawRoute = RawRouteImport.update({
+  id: '/raw',
+  path: '/raw',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RiskRoute = RiskRouteImport.update({
@@ -22,31 +31,76 @@ const RiskRoute = RiskRouteImport.update({
   path: '/risk',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CountriesIndexRoute = CountriesIndexRouteImport.update({
+  id: '/countries/',
+  path: '/countries/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CountriesCodeRoute = CountriesCodeRouteImport.update({
+  id: '/countries/$code',
+  path: '/countries/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TopicsSlugRoute = TopicsSlugRouteImport.update({
+  id: '/topics/$slug',
+  path: '/topics/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/raw': typeof RawRoute
   '/risk': typeof RiskRoute
+  '/countries/$code': typeof CountriesCodeRoute
+  '/topics/$slug': typeof TopicsSlugRoute
+  '/countries/': typeof CountriesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/raw': typeof RawRoute
   '/risk': typeof RiskRoute
+  '/countries/$code': typeof CountriesCodeRoute
+  '/topics/$slug': typeof TopicsSlugRoute
+  '/countries': typeof CountriesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/raw': typeof RawRoute
   '/risk': typeof RiskRoute
+  '/countries/$code': typeof CountriesCodeRoute
+  '/topics/$slug': typeof TopicsSlugRoute
+  '/countries/': typeof CountriesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/risk'
+  fullPaths:
+    | '/'
+    | '/raw'
+    | '/risk'
+    | '/countries/$code'
+    | '/topics/$slug'
+    | '/countries/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/risk'
-  id: '__root__' | '/' | '/risk'
+  to:
+    '/' | '/raw' | '/risk' | '/countries/$code' | '/topics/$slug' | '/countries'
+  id:
+    | '__root__'
+    | '/'
+    | '/raw'
+    | '/risk'
+    | '/countries/$code'
+    | '/topics/$slug'
+    | '/countries/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  RawRoute: typeof RawRoute
   RiskRoute: typeof RiskRoute
+  CountriesCodeRoute: typeof CountriesCodeRoute
+  TopicsSlugRoute: typeof TopicsSlugRoute
+  CountriesIndexRoute: typeof CountriesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +112,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/raw': {
+      id: '/raw'
+      path: '/raw'
+      fullPath: '/raw'
+      preLoaderRoute: typeof RawRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/risk': {
       id: '/risk'
       path: '/risk'
@@ -65,12 +126,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RiskRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/countries/': {
+      id: '/countries/'
+      path: '/countries'
+      fullPath: '/countries/'
+      preLoaderRoute: typeof CountriesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/countries/$code': {
+      id: '/countries/$code'
+      path: '/countries/$code'
+      fullPath: '/countries/$code'
+      preLoaderRoute: typeof CountriesCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/topics/$slug': {
+      id: '/topics/$slug'
+      path: '/topics/$slug'
+      fullPath: '/topics/$slug'
+      preLoaderRoute: typeof TopicsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  RawRoute: RawRoute,
   RiskRoute: RiskRoute,
+  CountriesCodeRoute: CountriesCodeRoute,
+  TopicsSlugRoute: TopicsSlugRoute,
+  CountriesIndexRoute: CountriesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
