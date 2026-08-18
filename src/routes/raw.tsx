@@ -9,7 +9,7 @@ import type { RawStatus, RiskTypeId, SourceClassId } from "@/data/types";
 import { useWorkbench } from "@/state/workbench";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/raw")({
   head: () => ({
     meta: [
       { title: "原始信息流工作台 · 全球安全风险监测平台" },
