@@ -9,7 +9,6 @@ import { riskTypeLabel } from "@/data/platform";
 import { topicProfiles, topicStatusLabel } from "@/data/topics";
 import {
   aggregateByCountry,
-  eventCountryCode,
   sortByTimeDesc,
   timeWindowLabel,
   withinWindow,
@@ -171,5 +170,3 @@ function Overview() {
     </PageShell>
   );
 }
-
-export const _unusedCountryCode = eventCountryCode;
