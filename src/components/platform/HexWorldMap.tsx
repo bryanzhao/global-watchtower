@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Minus, Plus, RotateCcw } from "lucide-react";
-import { hexTiles } from "@/data/hexmap";
+import { countryNameByCode, countryRegionByCode } from "@/data/hexmap";
+import { gridHexes } from "@/data/hexgrid";
 import { riskTypeLabel } from "@/data/platform";
 import type { CountryAggregate } from "@/data/analytics";
 import { cn } from "@/lib/utils";
 import type { RiskLevel } from "@/data/types";
 
-const HEX_R = 10; // 六边形外接圆半径
+const HEX_R = 5; // 六边形像素外接圆半径
 const SQRT3 = Math.sqrt(3);
 const MIN_ZOOM = 0.6;
 const MAX_ZOOM = 4;
@@ -19,20 +20,29 @@ function tileCenter(col: number, row: number) {
   };
 }
 
-function hexPoints(cx: number, cy: number, r: number) {
-  const pts: string[] = [];
+function hexPath(cx: number, cy: number, r: number) {
+  let d = "";
   for (let i = 0; i < 6; i += 1) {
     const a = (Math.PI / 180) * (60 * i - 90);
-    pts.push(`${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`);
+    const x = (cx + r * Math.cos(a)).toFixed(2);
+    const y = (cy + r * Math.sin(a)).toFixed(2);
+    d += `${i === 0 ? "M" : "L"}${x} ${y}`;
   }
-  return pts.join(" ");
+  return `${d}Z`;
 }
 
 const levelFill: Record<RiskLevel, string> = {
-  high: "fill-destructive/80 stroke-destructive",
-  medium: "fill-warning/70 stroke-warning",
-  low: "fill-success/50 stroke-success",
+  high: "fill-destructive/85",
+  medium: "fill-warning/80",
+  low: "fill-success/70",
 };
+
+interface CountryShape {
+  code: string;
+  d: string;
+  cx: number;
+  cy: number;
+}
 
 export function HexWorldMap({
   aggregates,
@@ -50,16 +60,36 @@ export function HexWorldMap({
   const stateRef = useRef({ zoom, offset });
   stateRef.current = { zoom, offset };
 
-  const { positions, viewBox } = useMemo(() => {
-    const positions = hexTiles.map((t) => ({ ...t, ...tileCenter(t.col, t.row) }));
-    const xs = positions.map((p) => p.x);
-    const ys = positions.map((p) => p.y);
+  const { shapes, viewBox } = useMemo(() => {
+    const byCode = new Map<string, { d: string; sx: number; sy: number; n: number }>();
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const h of gridHexes) {
+      const { x, y } = tileCenter(h.col, h.row);
+      const entry = byCode.get(h.code) ?? { d: "", sx: 0, sy: 0, n: 0 };
+      entry.d += hexPath(x, y, HEX_R - 0.45);
+      entry.sx += x;
+      entry.sy += y;
+      entry.n += 1;
+      byCode.set(h.code, entry);
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    const shapes: CountryShape[] = [...byCode.entries()].map(([code, e]) => ({
+      code,
+      d: e.d,
+      cx: e.sx / e.n,
+      cy: e.sy / e.n,
+    }));
     const pad = HEX_R * 2;
-    const minX = Math.min(...xs) - pad;
-    const minY = Math.min(...ys) - pad;
-    const w = Math.max(...xs) - minX + pad;
-    const h = Math.max(...ys) - minY + pad;
-    return { positions, viewBox: `${minX} ${minY} ${w} ${h}` };
+    return {
+      shapes,
+      viewBox: `${minX - pad} ${minY - pad} ${maxX - minX + pad * 2} ${maxY - minY + pad * 2}`,
+    };
   }, []);
 
   const applyZoom = useCallback((next: number, px: number, py: number) => {
@@ -126,23 +156,24 @@ export function HexWorldMap({
   };
 
   const hovered = hover ? aggregates.get(hover) : null;
-  const hoveredTile = hover ? hexTiles.find((t) => t.code === hover) : null;
+  const hoveredName = hover ? (countryNameByCode[hover] ?? hover) : null;
+  const hoveredRegion = hover ? (countryRegionByCode[hover] ?? "") : "";
 
   return (
     <div className="relative">
       <div className="mb-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         <span className="tracking-wider uppercase">{windowLabel}风险事件分布</span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm bg-destructive/80" aria-hidden />高
+          <span className="h-2.5 w-2.5 rounded-sm bg-destructive/85" aria-hidden />高
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm bg-warning/70" aria-hidden />中
+          <span className="h-2.5 w-2.5 rounded-sm bg-warning/80" aria-hidden />中
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm bg-success/50" aria-hidden />低
+          <span className="h-2.5 w-2.5 rounded-sm bg-success/70" aria-hidden />低
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm bg-muted" aria-hidden />无事件
+          <span className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/25" aria-hidden />无事件
         </span>
         <span className="ml-auto">滚轮缩放 · 拖拽平移 · 点击进入国别页</span>
       </div>
@@ -153,50 +184,45 @@ export function HexWorldMap({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="relative h-[420px] cursor-grab touch-none overflow-hidden rounded-md border border-border bg-surface active:cursor-grabbing"
+        className="relative h-[460px] cursor-grab touch-none overflow-hidden rounded-md border border-border bg-surface active:cursor-grabbing"
       >
         <div
           className="h-full w-full origin-top-left"
           style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}
         >
           <svg viewBox={viewBox} className="h-full w-full" role="img" aria-label="全球风险事件蜂窝地图">
-            {positions.map((p) => {
+            {shapes.map((p) => {
               const agg = aggregates.get(p.code);
               return (
-                <g
+                <path
                   key={p.code}
+                  d={p.d}
                   onMouseEnter={() => setHover(p.code)}
                   onMouseLeave={() => setHover((h) => (h === p.code ? null : h))}
                   onClick={() => {
                     if (!drag.current?.moved) onSelect(p.code);
                   }}
-                  className="cursor-pointer"
-                >
-                  <polygon
-                    points={hexPoints(p.x, p.y, HEX_R - 0.8)}
-                    className={cn(
-                      "stroke-[0.6] transition-opacity",
-                      agg ? levelFill[agg.level] : "fill-muted stroke-border",
-                      hover === p.code && "opacity-80",
-                    )}
-                  />
-                  {agg ? (
-                    <text
-                      x={p.x}
-                      y={p.y + 3.4}
-                      textAnchor="middle"
-                      className="pointer-events-none fill-foreground text-[8px] font-semibold"
-                    >
-                      {agg.count}
-                    </text>
-                  ) : null}
+                  className={cn(
+                    "cursor-pointer transition-opacity",
+                    agg ? levelFill[agg.level] : "fill-muted-foreground/25",
+                    hover === p.code && "opacity-70",
+                  )}
+                />
+              );
+            })}
+            {shapes.map((p) => {
+              const agg = aggregates.get(p.code);
+              if (!agg) return null;
+              return (
+                <g key={`n-${p.code}`} className="pointer-events-none">
+                  <circle cx={p.cx} cy={p.cy} r={6.5} className="fill-background/85 stroke-border stroke-[0.5]" />
                   <text
-                    x={p.x}
-                    y={p.y + HEX_R + 4}
+                    x={p.cx}
+                    y={p.cy + 2.6}
                     textAnchor="middle"
-                    className="pointer-events-none fill-muted-foreground text-[4.4px]"
+                    className="fill-foreground text-[7px] font-semibold tabular-nums"
                   >
-                    {p.name}
+                    {agg.count}
                   </text>
                 </g>
               );
@@ -216,10 +242,10 @@ export function HexWorldMap({
           </MapBtn>
         </div>
 
-        {hoveredTile ? (
+        {hoveredName ? (
           <div className="pointer-events-none absolute top-3 left-3 max-w-[240px] rounded-md border border-border bg-background/95 p-3 text-xs">
-            <p className="text-sm font-semibold">{hoveredTile.name}</p>
-            <p className="mt-0.5 text-muted-foreground">{hoveredTile.region}</p>
+            <p className="text-sm font-semibold">{hoveredName}</p>
+            {hoveredRegion ? <p className="mt-0.5 text-muted-foreground">{hoveredRegion}</p> : null}
             {hovered ? (
               <>
                 <p className="mt-1.5 tabular-nums">
