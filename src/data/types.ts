@@ -44,6 +44,8 @@ export interface RiskEvent {
   occurredAt: string;
   occurredEnd?: string;
   country: string;
+  /** ISO3 国家码，用于地图与国别页聚合 */
+  countryCode?: string;
   area?: string;
   city?: string;
   /** 国家行为体 */
