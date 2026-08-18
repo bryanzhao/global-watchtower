@@ -9,12 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as RawRouteImport } from './routes/raw'
 import { Route as RiskRouteImport } from './routes/risk'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const RawRoute = RawRouteImport.update({
+  id: '/raw',
+  path: '/raw',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RiskRoute = RiskRouteImport.update({
@@ -24,38 +24,38 @@ const RiskRoute = RiskRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/raw': typeof RawRoute
   '/risk': typeof RiskRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/raw': typeof RawRoute
   '/risk': typeof RiskRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/raw': typeof RawRoute
   '/risk': typeof RiskRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/risk'
+  fullPaths: '/raw' | '/risk'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/risk'
-  id: '__root__' | '/' | '/risk'
+  to: '/raw' | '/risk'
+  id: '__root__' | '/raw' | '/risk'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  RawRoute: typeof RawRoute
   RiskRoute: typeof RiskRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/raw': {
+      id: '/raw'
+      path: '/raw'
+      fullPath: '/raw'
+      preLoaderRoute: typeof RawRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/risk': {
@@ -69,7 +69,7 @@ declare module '@tanstack/react-router' {
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  RawRoute: RawRoute,
   RiskRoute: RiskRoute,
 }
 export const routeTree = rootRouteImport
