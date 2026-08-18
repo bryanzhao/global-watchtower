@@ -194,7 +194,7 @@ export function HexWorldMap({
                     x={p.x}
                     y={p.y + HEX_R + 4}
                     textAnchor="middle"
-                    className="pointer-events-none fill-muted-foreground text-[3.6px]"
+                    className="pointer-events-none fill-muted-foreground text-[4.4px]"
                   >
                     {p.name}
                   </text>

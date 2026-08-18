@@ -261,23 +261,31 @@ function ModuleBlock({ module: m }: { module: TopicModule }) {
       ) : null}
 
       {m.kind === "gauge" ? (
-        <ul className="space-y-3">
-          {m.items.map((it) => (
-            <li key={it.label}>
-              <div className="flex items-baseline justify-between gap-2 text-sm">
-                <span>{it.label}</span>
-                <span className="font-mono text-xs tabular-nums">{it.value}/5</span>
-              </div>
-              <div className="mt-1 h-1.5 w-full rounded-sm bg-muted">
-                <div
-                  className={cn("h-1.5 rounded-sm", levelBar[it.value >= 4 ? "high" : it.value >= 3 ? "medium" : "low"])}
-                  style={{ width: `${(it.value / 5) * 100}%` }}
-                />
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{it.note}</p>
-            </li>
-          ))}
-        </ul>
+        (() => {
+          const max = m.items.some((i) => i.value > 5) ? 100 : 5;
+          return (
+            <ul className="space-y-3">
+              {m.items.map((it) => {
+                const pct = Math.max(0, Math.min(100, (it.value / max) * 100));
+                const tone: RiskLevel = pct >= 70 ? "high" : pct >= 40 ? "medium" : "low";
+                return (
+                  <li key={it.label}>
+                    <div className="flex items-baseline justify-between gap-2 text-sm">
+                      <span>{it.label}</span>
+                      <span className="font-mono text-xs tabular-nums">
+                        {it.value}/{max}
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full rounded-sm bg-muted">
+                      <div className={cn("h-1.5 rounded-sm", levelBar[tone])} style={{ width: `${pct}%` }} />
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{it.note}</p>
+                  </li>
+                );
+              })}
+            </ul>
+          );
+        })()
       ) : null}
 
       {m.kind === "timeline" ? (
