@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { incomingItems, rawItems, riskEvents } from "@/data/platform";
-import type { RawItem, RiskEvent } from "@/data/types";
+import type { AiStatus, RawItem, RiskEvent } from "@/data/types";
 
 export type NewEventDraft = Omit<RiskEvent, "id" | "createdAt" | "createdBy">;
 
@@ -25,6 +25,19 @@ interface WorkbenchValue {
 
 const WorkbenchContext = createContext<WorkbenchValue | null>(null);
 
+/** 模拟 AI 处理结果：按条目 ID 稳定派生，接入真实 AI 后由后端返回 */
+function deriveAiStatus(item: RawItem): AiStatus {
+  if (item.aiStatus) return item.aiStatus;
+  let h = 0;
+  for (const ch of item.id) h = (h * 31 + ch.charCodeAt(0)) % 997;
+  const bucket = h % 3;
+  return bucket === 0 ? "extracted" : bucket === 1 ? "ignored" : "new";
+}
+
+function withAi(list: RawItem[]): RawItem[] {
+  return list.map((i) => ({ ...i, aiStatus: deriveAiStatus(i) }));
+}
+
 function stamp() {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
@@ -32,9 +45,9 @@ function stamp() {
 }
 
 export function WorkbenchProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<RawItem[]>(rawItems);
+  const [items, setItems] = useState<RawItem[]>(() => withAi(rawItems));
   const [events, setEvents] = useState<RiskEvent[]>(riskEvents);
-  const [queue, setQueue] = useState<RawItem[]>(incomingItems);
+  const [queue, setQueue] = useState<RawItem[]>(() => withAi(incomingItems));
   const [lastRefresh, setLastRefresh] = useState("08-17 07:00");
   const [seq, setSeq] = useState(32);
 

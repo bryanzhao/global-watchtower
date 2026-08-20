@@ -13,6 +13,9 @@ export type RiskTypeId =
 
 export type RawStatus = "new" | "extracted" | "ignored";
 
+/** AI 自动处理状态，与人工状态相互独立 */
+export type AiStatus = "new" | "extracted" | "ignored";
+
 export interface SourceClass {
   id: SourceClassId;
   name: string;
@@ -34,6 +37,7 @@ export interface RawItem {
   topic?: string;
   region?: string;
   status: RawStatus;
+  aiStatus?: AiStatus;
   eventId?: string;
 }
 
