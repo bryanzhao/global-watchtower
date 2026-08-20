@@ -32,6 +32,18 @@ export function eventCountryName(event: RiskEvent): string {
   return code ? (countryNameByCode[code] ?? event.country) : event.country;
 }
 
+/** 一条风险信息可同时从属多个主题（主主题在前）。 */
+export function eventTopics(event: RiskEvent): string[] {
+  return Array.from(new Set([event.topic, ...(event.alsoTopics ?? [])].filter(Boolean) as string[]));
+}
+
+/** 一条风险信息可同时影响多个国家（主国家在前）。 */
+export function eventCountryCodes(event: RiskEvent): string[] {
+  return Array.from(
+    new Set([eventCountryCode(event), ...(event.alsoCountryCodes ?? [])].filter(Boolean) as string[]),
+  );
+}
+
 const levelRank: Record<RiskLevel, number> = { low: 1, medium: 2, high: 3 };
 
 export interface CountryAggregate {
@@ -47,9 +59,8 @@ export function aggregateByCountry(events: RiskEvent[], hours: TimeWindow): Map<
   const map = new Map<string, CountryAggregate>();
   for (const event of events) {
     if (!withinWindow(event, hours)) continue;
-    const code = eventCountryCode(event);
-    if (!code) continue;
-    const existing =
+    for (const code of eventCountryCodes(event)) {
+      const existing =
       map.get(code) ??
       {
         code,
@@ -59,10 +70,11 @@ export function aggregateByCountry(events: RiskEvent[], hours: TimeWindow): Map<
         level: "low" as RiskLevel,
         byType: {},
       };
-    existing.count += 1;
-    if (levelRank[event.level] > levelRank[existing.level]) existing.level = event.level;
-    existing.byType[event.riskType] = (existing.byType[event.riskType] ?? 0) + 1;
-    map.set(code, existing);
+      existing.count += 1;
+      if (levelRank[event.level] > levelRank[existing.level]) existing.level = event.level;
+      existing.byType[event.riskType] = (existing.byType[event.riskType] ?? 0) + 1;
+      map.set(code, existing);
+    }
   }
   return map;
 }
