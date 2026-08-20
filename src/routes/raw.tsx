@@ -5,7 +5,7 @@ import { PageShell } from "@/components/platform/PageShell";
 import { Panel, SourceLink, Tag } from "@/components/platform/Primitives";
 import { ExtractDrawer } from "@/components/platform/ExtractDrawer";
 import { sourceClasses, topics } from "@/data/platform";
-import type { RawItem, RawStatus, SourceClassId } from "@/data/types";
+import type { AiStatus, RawItem, RawStatus, SourceClassId } from "@/data/types";
 import { useWorkbench } from "@/state/workbench";
 import { cn } from "@/lib/utils";
 
@@ -34,12 +34,36 @@ const statusLabel: Record<RawStatus, string> = {
   ignored: "已忽略",
 };
 
+const aiStatusLabel: Record<AiStatus, string> = {
+  new: "AI 未处理",
+  extracted: "AI 已提取",
+  ignored: "AI 已忽略",
+};
+
+function AiStatusTag({ status }: { status: AiStatus }) {
+  return (
+    <span
+      className={cn(
+        "rounded-sm border px-2 py-0.5 text-xs",
+        status === "extracted"
+          ? "border-primary/40 text-primary"
+          : status === "ignored"
+            ? "border-border text-muted-foreground"
+            : "border-destructive/40 text-destructive",
+      )}
+    >
+      {aiStatusLabel[status]}
+    </span>
+  );
+}
+
 function RawFeedWorkbench() {
   const { items, lastRefresh, pendingIncoming, refresh, ignoreItems, restoreItems, createEvent } =
     useWorkbench();
   const [tab, setTab] = useState<SourceClassId>("social");
   const [topicFilter, setTopicFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<RawStatus | "all">("all");
+  const [aiFilter, setAiFilter] = useState<AiStatus | "all">("all");
   const [selected, setSelected] = useState<string[]>([]);
   const [drawerIds, setDrawerIds] = useState<string[] | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -53,10 +77,11 @@ function RawFeedWorkbench() {
           (i) =>
             (topicFilter === "all" ||
               (topicFilter === "none" ? !i.topic : i.topic === topicFilter)) &&
-            (statusFilter === "all" || i.status === statusFilter),
+            (statusFilter === "all" || i.status === statusFilter) &&
+            (aiFilter === "all" || (i.aiStatus ?? "new") === aiFilter),
         )
         .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
-    [tabItems, topicFilter, statusFilter],
+    [tabItems, topicFilter, statusFilter, aiFilter],
   );
 
   const toggle = (id: string) =>
@@ -128,16 +153,29 @@ function RawFeedWorkbench() {
         {sourceClasses.find((s) => s.id === tab)!.description}
       </p>
 
-      <div className="mb-4 flex flex-wrap items-center gap-4">
-        <FilterRow
-          label="状态"
+      <div className="mb-4 flex flex-col gap-2">
+        <RadioFilterRow
+          name="human-status"
+          label="人工状态"
           value={statusFilter}
           onChange={(v) => setStatusFilter(v as RawStatus | "all")}
           options={[
             { value: "all", label: "全部" },
-            { value: "new", label: "未处理" },
-            { value: "extracted", label: "已提取" },
-            { value: "ignored", label: "已忽略" },
+            { value: "new", label: "人工未处理" },
+            { value: "extracted", label: "人工已处理" },
+            { value: "ignored", label: "人工已忽略" },
+          ]}
+        />
+        <RadioFilterRow
+          name="ai-status"
+          label="AI 状态"
+          value={aiFilter}
+          onChange={(v) => setAiFilter(v as AiStatus | "all")}
+          options={[
+            { value: "all", label: "全部" },
+            { value: "new", label: "AI 未处理" },
+            { value: "extracted", label: "AI 已提取" },
+            { value: "ignored", label: "AI 已忽略" },
           ]}
         />
       </div>
@@ -173,6 +211,7 @@ function RawFeedWorkbench() {
                       <span className="text-xs text-muted-foreground">
                         {statusLabel[item.status]}
                       </span>
+                      <AiStatusTag status={item.aiStatus ?? "new"} />
                       {item.eventId ? (
                         <span className="font-mono text-xs text-primary">{item.eventId}</span>
                       ) : null}
