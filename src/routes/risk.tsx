@@ -3,8 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageShell } from "@/components/platform/PageShell";
 import { Panel, SourceLink, Tag } from "@/components/platform/Primitives";
 import { RiskBadge } from "@/components/platform/RiskBadge";
-import { riskTypeLabel, riskTypes, topics } from "@/data/platform";
-import type { RiskLevel, RiskTypeId } from "@/data/types";
+import { topics } from "@/data/platform";
+import type { RiskLevel } from "@/data/types";
 import { eventTopics, eventCountryCodes } from "@/data/analytics";
 import { countryNameByCode } from "@/data/hexmap";
 import { useWorkbench } from "@/state/workbench";
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/risk")({
       {
         name: "description",
         content:
-          "经 AI 与分析师筛选、去重与结构化后的风险事件时间线，含时间、地点、涉事主体、风险类型、主题与溯源原始条目。",
+          "经 AI 与分析师筛选、去重与结构化后的风险事件时间线，含时间、地点、涉事主体、主题与溯源原始条目。",
       },
       { property: "og:title", content: "风险信息流 · 全球安全风险监测平台" },
       {
@@ -31,7 +31,6 @@ export const Route = createFileRoute("/risk")({
 
 function RiskFeed() {
   const { events, items, attachItems } = useWorkbench();
-  const [typeFilter, setTypeFilter] = useState<RiskTypeId | "all">("all");
   const [levelFilter, setLevelFilter] = useState<RiskLevel | "all">("all");
   const [topicFilter, setTopicFilter] = useState("all");
   const [country, setCountry] = useState("");
@@ -42,7 +41,6 @@ function RiskFeed() {
     () =>
       events.filter(
         (e) =>
-          (typeFilter === "all" || e.riskType === typeFilter) &&
           (levelFilter === "all" || e.level === levelFilter) &&
           (topicFilter === "all" ||
             (topicFilter === "none"
@@ -54,7 +52,7 @@ function RiskFeed() {
               (countryNameByCode[c] ?? "").includes(country.trim()),
             )),
       ),
-    [events, typeFilter, levelFilter, topicFilter, country],
+    [events, levelFilter, topicFilter, country],
   );
 
   const attachable = items.filter((i) => i.status === "new");
@@ -67,15 +65,6 @@ function RiskFeed() {
       actions={<span className="text-xs text-muted-foreground">共 {events.length} 个事件</span>}
     >
       <div className="mb-5 flex flex-wrap items-center gap-4">
-        <Select
-          label="风险类型"
-          value={typeFilter}
-          onChange={(v) => setTypeFilter(v as RiskTypeId | "all")}
-          options={[
-            { value: "all", label: "全部" },
-            ...riskTypes.map((t) => ({ value: t, label: riskTypeLabel[t] })),
-          ]}
-        />
         <Select
           label="等级"
           value={levelFilter}
@@ -150,7 +139,6 @@ function RiskFeed() {
                       </div>
                       <p className="mt-1.5 text-sm text-muted-foreground">{event.summary}</p>
                       <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                        <Tag>{riskTypeLabel[event.riskType]}</Tag>
                         <Tag>
                           {[event.country, event.area, event.city].filter(Boolean).join(" · ")}
                         </Tag>
