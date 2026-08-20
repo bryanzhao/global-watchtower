@@ -11,8 +11,7 @@ import {
   sortByTimeDesc,
   timeWindowLabel,
   withinWindow,
-  type TimeWindow,
-} from "@/data/analytics";
+  type TimeWindow,, eventCountryCodes, eventTopics } from "@/data/analytics";
 import { useWorkbench } from "@/state/workbench";
 import { cn } from "@/lib/utils";
 import type { RiskLevel, RiskTypeId } from "@/data/types";
@@ -68,7 +67,7 @@ function CountryPage() {
   const [win, setWin] = useState<TimeWindow | "all">("all");
 
   const countryEvents = useMemo(
-    () => sortByTimeDesc(events.filter((e) => eventCountryCode(e) === profile.code)),
+    () => sortByTimeDesc(events.filter((e) => eventCountryCodes(e).includes(profile.code))),
     [events, profile.code],
   );
 
@@ -78,7 +77,7 @@ function CountryPage() {
   );
 
   const relatedTopics = Array.from(
-    new Set(countryEvents.map((e) => e.topic).filter(Boolean) as string[]),
+    new Set(countryEvents.flatMap((e) => eventTopics(e))),
   );
 
   return (

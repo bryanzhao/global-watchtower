@@ -14,6 +14,7 @@ import { Route as RawRouteImport } from './routes/raw'
 import { Route as RiskRouteImport } from './routes/risk'
 import { Route as CountriesIndexRouteImport } from './routes/countries.index'
 import { Route as CountriesCodeRouteImport } from './routes/countries.$code'
+import { Route as TopicsIndexRouteImport } from './routes/topics.index'
 import { Route as TopicsSlugRouteImport } from './routes/topics.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const CountriesCodeRoute = CountriesCodeRouteImport.update({
   path: '/countries/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TopicsIndexRoute = TopicsIndexRouteImport.update({
+  id: '/topics/',
+  path: '/topics/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TopicsSlugRoute = TopicsSlugRouteImport.update({
   id: '/topics/$slug',
   path: '/topics/$slug',
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/countries/$code': typeof CountriesCodeRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/countries/': typeof CountriesIndexRoute
+  '/topics/': typeof TopicsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/countries/$code': typeof CountriesCodeRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/countries': typeof CountriesIndexRoute
+  '/topics': typeof TopicsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +79,7 @@ export interface FileRoutesById {
   '/countries/$code': typeof CountriesCodeRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/countries/': typeof CountriesIndexRoute
+  '/topics/': typeof TopicsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,9 +90,16 @@ export interface FileRouteTypes {
     | '/countries/$code'
     | '/topics/$slug'
     | '/countries/'
+    | '/topics/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/raw' | '/risk' | '/countries/$code' | '/topics/$slug' | '/countries'
+    | '/'
+    | '/raw'
+    | '/risk'
+    | '/countries/$code'
+    | '/topics/$slug'
+    | '/countries'
+    | '/topics'
   id:
     | '__root__'
     | '/'
@@ -92,6 +108,7 @@ export interface FileRouteTypes {
     | '/countries/$code'
     | '/topics/$slug'
     | '/countries/'
+    | '/topics/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -101,6 +118,7 @@ export interface RootRouteChildren {
   CountriesCodeRoute: typeof CountriesCodeRoute
   TopicsSlugRoute: typeof TopicsSlugRoute
   CountriesIndexRoute: typeof CountriesIndexRoute
+  TopicsIndexRoute: typeof TopicsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -140,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CountriesCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/topics/': {
+      id: '/topics/'
+      path: '/topics'
+      fullPath: '/topics/'
+      preLoaderRoute: typeof TopicsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/topics/$slug': {
       id: '/topics/$slug'
       path: '/topics/$slug'
@@ -157,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   CountriesCodeRoute: CountriesCodeRoute,
   TopicsSlugRoute: TopicsSlugRoute,
   CountriesIndexRoute: CountriesIndexRoute,
+  TopicsIndexRoute: TopicsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -5,6 +5,8 @@ import { Panel, SourceLink, Tag } from "@/components/platform/Primitives";
 import { RiskBadge } from "@/components/platform/RiskBadge";
 import { riskTypeLabel, riskTypes, topics } from "@/data/platform";
 import type { RiskLevel, RiskTypeId } from "@/data/types";
+import { eventTopics, eventCountryCodes } from "@/data/analytics";
+import { countryNameByCode } from "@/data/hexmap";
 import { useWorkbench } from "@/state/workbench";
 import { cn } from "@/lib/utils";
 
@@ -42,8 +44,15 @@ function RiskFeed() {
         (e) =>
           (typeFilter === "all" || e.riskType === typeFilter) &&
           (levelFilter === "all" || e.level === levelFilter) &&
-          (topicFilter === "all" || (topicFilter === "none" ? !e.topic : e.topic === topicFilter)) &&
-          (country.trim() === "" || e.country.includes(country.trim())),
+          (topicFilter === "all" ||
+            (topicFilter === "none"
+              ? eventTopics(e).length === 0
+              : eventTopics(e).includes(topicFilter))) &&
+          (country.trim() === "" ||
+            e.country.includes(country.trim()) ||
+            eventCountryCodes(e).some((c) =>
+              (countryNameByCode[c] ?? "").includes(country.trim()),
+            )),
       ),
     [events, typeFilter, levelFilter, topicFilter, country],
   );
@@ -145,7 +154,14 @@ function RiskFeed() {
                         <Tag>
                           {[event.country, event.area, event.city].filter(Boolean).join(" · ")}
                         </Tag>
-                        {event.topic ? <Tag>{event.topic}</Tag> : <Tag>无主题</Tag>}
+                        {(event.alsoCountryCodes ?? []).map((c) => (
+                          <Tag key={c}>波及 {countryNameByCode[c] ?? c}</Tag>
+                        ))}
+                        {eventTopics(event).length ? (
+                          eventTopics(event).map((t) => <Tag key={t}>{t}</Tag>)
+                        ) : (
+                          <Tag>无主题</Tag>
+                        )}
                         <Tag>可信度 {event.confidence}</Tag>
                         <span className="text-xs text-muted-foreground">
                           来源 {event.sourceItemIds.length} 条 · {event.createdBy}
