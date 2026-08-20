@@ -54,7 +54,7 @@ function RiskFeed() {
     <PageShell
       eyebrow="Risk Feed"
       title="风险信息流"
-      description="来自原始信息流的提取结果。每条都是结构化风险事件：时间、地点、涉事主体、事件概况、风险类型与所属主题，并保留溯源条目。"
+      description="来自原始信息流的提取结果。颗粒度是「一则重要新闻 / 一个关键进展」：每一次袭击、每一次关键表态或部署变化各自成条，按所属主题串联，并保留时间、地点、涉事主体与溯源条目。"
       actions={<span className="text-xs text-muted-foreground">共 {events.length} 个事件</span>}
     >
       <div className="mb-5 flex flex-wrap items-center gap-4">
