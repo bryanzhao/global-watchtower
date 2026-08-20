@@ -4,8 +4,8 @@ import { RefreshCw } from "lucide-react";
 import { PageShell } from "@/components/platform/PageShell";
 import { Panel, SourceLink, Tag } from "@/components/platform/Primitives";
 import { ExtractDrawer } from "@/components/platform/ExtractDrawer";
-import { riskTypeLabel, riskTypes, sourceClasses, topics } from "@/data/platform";
-import type { RawItem, RawStatus, RiskTypeId, SourceClassId } from "@/data/types";
+import { sourceClasses, topics } from "@/data/platform";
+import type { RawItem, RawStatus, SourceClassId } from "@/data/types";
 import { useWorkbench } from "@/state/workbench";
 import { cn } from "@/lib/utils";
 
