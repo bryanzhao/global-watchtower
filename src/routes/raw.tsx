@@ -395,7 +395,6 @@ function DetailedCard({
           </div>
           <p className="mt-1.5 text-sm">{item.text}</p>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
-            {item.riskType ? <Tag>{riskTypeLabel[item.riskType]}</Tag> : null}
             {item.topic ? <Tag>{item.topic}</Tag> : null}
             {item.region ? <Tag>{item.region}</Tag> : null}
             <Tag>{item.lang}</Tag>
