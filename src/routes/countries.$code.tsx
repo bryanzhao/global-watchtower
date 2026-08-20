@@ -7,7 +7,6 @@ import { riskTypeLabel, riskTypes } from "@/data/platform";
 import { getCountryProfile, scoreLevel, type CountryProfile } from "@/data/countries";
 import { topicByName } from "@/data/topics";
 import {
-  eventCountryCode,
   sortByTimeDesc,
   timeWindowLabel,
   withinWindow,

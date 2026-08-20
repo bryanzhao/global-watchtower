@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Sparkles, X } from "lucide-react";
 import { riskTypeLabel, riskTypes, topics } from "@/data/platform";
+import { countryCodeByName } from "@/data/hexmap";
 import type { RawItem, RiskLevel, RiskTypeId } from "@/data/types";
 import type { NewEventDraft } from "@/state/workbench";
 import { PendingTag } from "./Primitives";
@@ -52,6 +53,8 @@ export function ExtractDrawer({
   const [level, setLevel] = useState<RiskLevel>("medium");
   const [confidence, setConfidence] = useState<"A" | "B" | "C">("B");
   const [topic, setTopic] = useState(prefill.topic);
+  const [alsoTopics, setAlsoTopics] = useState<string[]>([]);
+  const [alsoCountries, setAlsoCountries] = useState("");
 
   const canSubmit = title.trim().length > 0 && items.length > 0;
 
@@ -123,6 +126,16 @@ export function ExtractDrawer({
                 level,
                 confidence,
                 ...(topic ? { topic } : {}),
+                ...(alsoTopics.filter((t) => t && t !== topic).length
+                  ? { alsoTopics: alsoTopics.filter((t) => t && t !== topic) }
+                  : {}),
+                ...(splitTags(alsoCountries).length
+                  ? {
+                      alsoCountryCodes: splitTags(alsoCountries)
+                        .map((n) => countryCodeByName[n] ?? n.toUpperCase())
+                        .filter((c) => c !== countryCodeByName[country]),
+                    }
+                  : {}),
                 sourceItemIds: items.map((i) => i.id),
               });
             }}
@@ -183,6 +196,35 @@ export function ExtractDrawer({
                 </select>
               </Field>
             </div>
+
+            <Field label="同时从属的其他主题（可多选）">
+              <div className="flex flex-wrap gap-3 rounded-sm border border-border p-2.5">
+                {topics
+                  .filter((t) => t !== topic)
+                  .map((t) => (
+                    <label key={t} className="flex items-center gap-1.5 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={alsoTopics.includes(t)}
+                        onChange={(e) =>
+                          setAlsoTopics((prev) =>
+                            e.target.checked ? [...prev, t] : prev.filter((x) => x !== t),
+                          )
+                        }
+                      />
+                      {t}
+                    </label>
+                  ))}
+              </div>
+            </Field>
+            <Field label="同时波及的其他国家（逗号分隔，可空）">
+              <input
+                className={inputCls}
+                value={alsoCountries}
+                onChange={(e) => setAlsoCountries(e.target.value)}
+                placeholder="以色列, 布基纳法索"
+              />
+            </Field>
 
             <Field label="国家行为体（逗号分隔）">
               <input className={inputCls} value={stateActors} onChange={(e) => setStateActors(e.target.value)} />
