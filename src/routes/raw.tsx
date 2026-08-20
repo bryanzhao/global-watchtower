@@ -4,8 +4,8 @@ import { RefreshCw } from "lucide-react";
 import { PageShell } from "@/components/platform/PageShell";
 import { Panel, SourceLink, Tag } from "@/components/platform/Primitives";
 import { ExtractDrawer } from "@/components/platform/ExtractDrawer";
-import { riskTypeLabel, riskTypes, sourceClasses, topics } from "@/data/platform";
-import type { RawItem, RawStatus, RiskTypeId, SourceClassId } from "@/data/types";
+import { sourceClasses, topics } from "@/data/platform";
+import type { RawItem, RawStatus, SourceClassId } from "@/data/types";
 import { useWorkbench } from "@/state/workbench";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +38,6 @@ function RawFeedWorkbench() {
   const { items, lastRefresh, pendingIncoming, refresh, ignoreItems, restoreItems, createEvent } =
     useWorkbench();
   const [tab, setTab] = useState<SourceClassId>("social");
-  const [typeFilter, setTypeFilter] = useState<RiskTypeId | "all">("all");
   const [topicFilter, setTopicFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<RawStatus | "all">("all");
   const [selected, setSelected] = useState<string[]>([]);
@@ -52,13 +51,12 @@ function RawFeedWorkbench() {
       tabItems
         .filter(
           (i) =>
-            (typeFilter === "all" || i.riskType === typeFilter) &&
             (topicFilter === "all" ||
               (topicFilter === "none" ? !i.topic : i.topic === topicFilter)) &&
             (statusFilter === "all" || i.status === statusFilter),
         )
         .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
-    [tabItems, typeFilter, topicFilter, statusFilter],
+    [tabItems, topicFilter, statusFilter],
   );
 
   const toggle = (id: string) =>
@@ -131,15 +129,6 @@ function RawFeedWorkbench() {
       </p>
 
       <div className="mb-4 flex flex-wrap items-center gap-4">
-        <FilterRow
-          label="风险类型"
-          value={typeFilter}
-          onChange={(v) => setTypeFilter(v as RiskTypeId | "all")}
-          options={[
-            { value: "all", label: "全部" },
-            ...riskTypes.map((t) => ({ value: t, label: riskTypeLabel[t] })),
-          ]}
-        />
         <FilterRow
           label="状态"
           value={statusFilter}
@@ -312,7 +301,7 @@ function SocialCompactRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-md border border-border px-3 py-2.5 transition-colors",
+        "flex items-start gap-3 rounded-md border border-border px-3 py-3 transition-colors",
         selected && "border-primary bg-primary/5",
         item.status === "ignored" && "opacity-60",
       )}
@@ -322,34 +311,36 @@ function SocialCompactRow({
         checked={selected}
         onChange={onToggle}
         aria-label={`选择 ${item.id}`}
-        className="h-4 w-4 accent-[oklch(0.34_0.07_240)]"
+        className="mt-1 h-4 w-4 accent-[oklch(0.34_0.07_240)]"
       />
-      <div className="flex min-w-0 flex-1 items-center gap-4">
-        <div className="min-w-[140px] max-w-[200px]">
-          <p className="truncate text-sm font-semibold">{item.author}</p>
-          <p className="truncate font-mono text-xs text-muted-foreground">{item.handle}</p>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <div className="min-w-[140px] max-w-[200px]">
+            <p className="truncate text-sm font-semibold">{item.author}</p>
+            <p className="truncate font-mono text-xs text-muted-foreground">{item.handle}</p>
+          </div>
+          <div className="font-mono text-xs tabular-nums text-muted-foreground">
+            <span>{date}</span>
+            <span className="mx-1">·</span>
+            <span>{time}</span>
+          </div>
+          <span
+            className={cn(
+              "rounded-sm px-2 py-0.5 text-xs",
+              item.status === "extracted"
+                ? "bg-primary/10 text-primary"
+                : item.status === "ignored"
+                  ? "bg-muted/50 text-muted-foreground"
+                  : "bg-destructive/10 text-destructive",
+            )}
+          >
+            {statusLabel[item.status]}
+          </span>
+          <span className="text-xs">
+            <SourceLink href={item.url}>原文</SourceLink>
+          </span>
         </div>
-        <div className="w-px self-stretch bg-border" aria-hidden />
-        <div className="min-w-[100px] font-mono text-xs tabular-nums text-muted-foreground">
-          <span>{date}</span>
-          <span className="mx-1">·</span>
-          <span>{time}</span>
-        </div>
-        <span
-          className={cn(
-            "rounded-sm px-2 py-0.5 text-xs",
-            item.status === "extracted"
-              ? "bg-primary/10 text-primary"
-              : item.status === "ignored"
-                ? "bg-muted/50 text-muted-foreground"
-                : "bg-destructive/10 text-destructive",
-          )}
-        >
-          {statusLabel[item.status]}
-        </span>
-        <span className="text-xs">
-          <SourceLink href={item.url}>原文</SourceLink>
-        </span>
+        <p className="mt-2 text-sm leading-relaxed">{item.text}</p>
       </div>
       <div className="flex items-center gap-2">
         {item.status === "ignored" ? (
@@ -404,7 +395,6 @@ function DetailedCard({
           </div>
           <p className="mt-1.5 text-sm">{item.text}</p>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
-            {item.riskType ? <Tag>{riskTypeLabel[item.riskType]}</Tag> : null}
             {item.topic ? <Tag>{item.topic}</Tag> : null}
             {item.region ? <Tag>{item.region}</Tag> : null}
             <Tag>{item.lang}</Tag>
