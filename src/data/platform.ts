@@ -448,7 +448,6 @@ export const riskEvents: RiskEvent[] = [
     level: "high",
     confidence: "A",
     topic: "美伊对抗",
-    alsoTopics: ["黎以边境"],
     sourceItemIds: ["RAW-2405"],
     createdAt: "08-17 06:40",
     createdBy: "AI 预筛 · 已复核",
