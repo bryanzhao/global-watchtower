@@ -68,6 +68,9 @@ export const topics = [
   "萨赫勒安全",
   "利比亚局势",
   "美国-古巴",
+  "马里局势",
+  "黎以边境",
+  "非洲传染病",
 ];
 
 export const rawItems: RawItem[] = [
@@ -706,6 +709,7 @@ export const riskEvents: RiskEvent[] = [
     level: "high",
     confidence: "B",
     topic: "萨赫勒安全",
+    alsoTopics: ["马里局势"],
     sourceItemIds: ["RAW-2396"],
     createdAt: "08-15 11:20",
     createdBy: "分析师 · 陈",
