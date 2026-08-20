@@ -139,7 +139,6 @@ function RiskFeed() {
                       </div>
                       <p className="mt-1.5 text-sm text-muted-foreground">{event.summary}</p>
                       <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                        <Tag>{riskTypeLabel[event.riskType]}</Tag>
                         <Tag>
                           {[event.country, event.area, event.city].filter(Boolean).join(" · ")}
                         </Tag>
