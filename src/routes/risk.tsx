@@ -66,15 +66,6 @@ function RiskFeed() {
     >
       <div className="mb-5 flex flex-wrap items-center gap-4">
         <Select
-          label="风险类型"
-          value={typeFilter}
-          onChange={(v) => setTypeFilter(v as RiskTypeId | "all")}
-          options={[
-            { value: "all", label: "全部" },
-            ...riskTypes.map((t) => ({ value: t, label: riskTypeLabel[t] })),
-          ]}
-        />
-        <Select
           label="等级"
           value={levelFilter}
           onChange={(v) => setLevelFilter(v as RiskLevel | "all")}
