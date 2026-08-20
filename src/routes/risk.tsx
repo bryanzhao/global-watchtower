@@ -31,7 +31,6 @@ export const Route = createFileRoute("/risk")({
 
 function RiskFeed() {
   const { events, items, attachItems } = useWorkbench();
-  const [typeFilter, setTypeFilter] = useState<RiskTypeId | "all">("all");
   const [levelFilter, setLevelFilter] = useState<RiskLevel | "all">("all");
   const [topicFilter, setTopicFilter] = useState("all");
   const [country, setCountry] = useState("");
