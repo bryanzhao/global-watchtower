@@ -11,7 +11,8 @@ import {
   sortByTimeDesc,
   timeWindowLabel,
   withinWindow,
-  type TimeWindow,, eventCountryCodes, eventTopics } from "@/data/analytics";
+  type TimeWindow,
+  eventCountryCodes, eventTopics } from "@/data/analytics";
 import { useWorkbench } from "@/state/workbench";
 import { cn } from "@/lib/utils";
 import type { RiskLevel, RiskTypeId } from "@/data/types";

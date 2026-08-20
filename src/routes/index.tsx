@@ -12,7 +12,8 @@ import {
   sortByTimeDesc,
   timeWindowLabel,
   withinWindow,
-  type TimeWindow,, eventTopics } from "@/data/analytics";
+  type TimeWindow,
+  eventTopics } from "@/data/analytics";
 import { useWorkbench } from "@/state/workbench";
 import { cn } from "@/lib/utils";
 
