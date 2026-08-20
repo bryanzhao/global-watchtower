@@ -161,7 +161,7 @@ function RawFeedWorkbench() {
             当前筛选条件下没有条目。
           </p>
         ) : (
-          <ol className={cn("relative pl-6", tab !== "social" && "border-l border-border")}>
+          <ol className={cn("relative", tab === "social" ? "pl-0" : "border-l border-border pl-6")}>
             {visible.map((item) => (
               <li key={item.id} className="relative pb-6 last:pb-0">
                 {tab !== "social" ? (
