@@ -46,6 +46,8 @@ export interface RiskEvent {
   country: string;
   /** ISO3 国家码，用于地图与国别页聚合 */
   countryCode?: string;
+  /** 同时受影响的其他国家码（不含主国家） */
+  alsoCountryCodes?: string[];
   area?: string;
   city?: string;
   /** 国家行为体 */
@@ -58,6 +60,8 @@ export interface RiskEvent {
   level: RiskLevel;
   confidence: "A" | "B" | "C";
   topic?: string;
+  /** 同时从属的其他主题（不含主主题） */
+  alsoTopics?: string[];
   sourceItemIds: string[];
   createdAt: string;
   createdBy: string;

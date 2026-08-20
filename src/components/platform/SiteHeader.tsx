@@ -1,12 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { Flag, Globe2, LayoutDashboard, ListFilter, ShieldAlert } from "lucide-react";
+import { Flag, Globe2, LayoutDashboard, ListFilter, Layers, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/", label: "全局概览", icon: LayoutDashboard, exact: true },
-  { to: "/raw", label: "原始信息流", icon: ListFilter, exact: false },
   { to: "/risk", label: "风险信息流", icon: ShieldAlert, exact: false },
+  { to: "/topics", label: "专题", icon: Layers, exact: false },
   { to: "/countries", label: "国别", icon: Flag, exact: false },
+  { to: "/raw", label: "原始信息流", icon: ListFilter, exact: false, internal: true },
 ] as const;
 
 export function SiteHeader() {
@@ -25,15 +26,17 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="flex items-center gap-0.5">
+        <nav className="flex flex-1 items-center gap-0.5">
           {navItems.map((item) => (
             <Link
               key={item.to}
               to={item.to}
               activeOptions={{ exact: item.exact }}
+              title={"internal" in item && item.internal ? "内部工作台：未来仅登录且有权限的员工可见" : undefined}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
                 "[&.active]:bg-primary/10 [&.active]:text-primary",
+                "internal" in item && item.internal ? "ml-auto border border-dashed border-border" : "",
               )}
             >
               <item.icon className="h-3.5 w-3.5" aria-hidden />

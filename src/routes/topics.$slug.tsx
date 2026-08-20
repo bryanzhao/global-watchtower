@@ -5,7 +5,7 @@ import { RiskBadge } from "@/components/platform/RiskBadge";
 import { riskTypeLabel } from "@/data/platform";
 import { topicBySlug, topicStatusLabel, type TopicModule, type TopicProfile } from "@/data/topics";
 import { countryNameByCode } from "@/data/hexmap";
-import { sortByTimeDesc } from "@/data/analytics";
+import { sortByTimeDesc, eventTopics } from "@/data/analytics";
 import { useWorkbench } from "@/state/workbench";
 import { cn } from "@/lib/utils";
 import type { RiskLevel } from "@/data/types";
@@ -51,7 +51,7 @@ function TopicPage() {
   const { topic } = Route.useLoaderData() as { topic: TopicProfile };
   const { events, items } = useWorkbench();
 
-  const related = sortByTimeDesc(events.filter((e) => e.topic === topic.topic));
+  const related = sortByTimeDesc(events.filter((e) => eventTopics(e).includes(topic.topic)));
 
   return (
     <PageShell

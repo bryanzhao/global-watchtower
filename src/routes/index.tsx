@@ -13,7 +13,7 @@ import {
   timeWindowLabel,
   withinWindow,
   type TimeWindow,
-} from "@/data/analytics";
+  eventTopics } from "@/data/analytics";
 import { useWorkbench } from "@/state/workbench";
 import { cn } from "@/lib/utils";
 
@@ -132,7 +132,7 @@ function Overview() {
         <div className="space-y-3">
           <SectionTitle aside="每小时刷新">重大议题</SectionTitle>
           {topicProfiles.map((t) => {
-            const related = events.filter((e) => e.topic === t.topic && withinWindow(e, win));
+            const related = events.filter((e) => eventTopics(e).includes(t.topic) && withinWindow(e, win));
             return (
               <Link
                 key={t.slug}
