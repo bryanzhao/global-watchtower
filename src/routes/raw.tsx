@@ -469,31 +469,39 @@ function MiniButton({ children, onClick }: { children: React.ReactNode; onClick:
   );
 }
 
-function FilterRow({
+function RadioFilterRow({
+  name,
   label,
   value,
   onChange,
   options,
 }: {
+  name: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
 }) {
   return (
-    <label className="flex items-center gap-2 text-xs">
-      <span className="tracking-wider text-muted-foreground uppercase">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="rounded-sm border border-border bg-background px-2 py-1 text-sm"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      <span className="w-16 shrink-0 text-xs tracking-wider text-muted-foreground uppercase">
+        {label}
+      </span>
+      {options.map((o) => (
+        <label key={o.value} className="flex cursor-pointer items-center gap-1.5 text-sm">
+          <input
+            type="radio"
+            name={name}
+            value={o.value}
+            checked={value === o.value}
+            onChange={() => onChange(o.value)}
+            className="h-3.5 w-3.5 accent-[oklch(0.34_0.07_240)]"
+          />
+          <span className={cn(value === o.value ? "text-foreground" : "text-muted-foreground")}>
             {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
+          </span>
+        </label>
+      ))}
+    </div>
   );
 }
