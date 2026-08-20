@@ -375,6 +375,7 @@ function SocialCompactRow({
           >
             {statusLabel[item.status]}
           </span>
+          <AiStatusTag status={item.aiStatus ?? "new"} />
           <span className="text-xs">
             <SourceLink href={item.url}>原文</SourceLink>
           </span>
@@ -431,6 +432,7 @@ function DetailedCard({
             <span className="text-sm font-semibold">{item.author}</span>
             <span className="font-mono text-xs text-muted-foreground">{item.handle}</span>
             <span className="font-mono text-xs text-muted-foreground">{item.id}</span>
+            <AiStatusTag status={item.aiStatus ?? "new"} />
           </div>
           <p className="mt-1.5 text-sm">{item.text}</p>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
