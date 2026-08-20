@@ -5,7 +5,7 @@ import { PageShell } from "@/components/platform/PageShell";
 import { Panel, SourceLink, Tag } from "@/components/platform/Primitives";
 import { ExtractDrawer } from "@/components/platform/ExtractDrawer";
 import { riskTypeLabel, riskTypes, sourceClasses, topics } from "@/data/platform";
-import type { RawStatus, RiskTypeId, SourceClassId } from "@/data/types";
+import type { RawItem, RawStatus, RiskTypeId, SourceClassId } from "@/data/types";
 import { useWorkbench } from "@/state/workbench";
 import { cn } from "@/lib/utils";
 
@@ -49,13 +49,15 @@ function RawFeedWorkbench() {
 
   const visible = useMemo(
     () =>
-      tabItems.filter(
-        (i) =>
-          (typeFilter === "all" || i.riskType === typeFilter) &&
-          (topicFilter === "all" ||
-            (topicFilter === "none" ? !i.topic : i.topic === topicFilter)) &&
-          (statusFilter === "all" || i.status === statusFilter),
-      ).sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
+      tabItems
+        .filter(
+          (i) =>
+            (typeFilter === "all" || i.riskType === typeFilter) &&
+            (topicFilter === "all" ||
+              (topicFilter === "none" ? !i.topic : i.topic === topicFilter)) &&
+            (statusFilter === "all" || i.status === statusFilter),
+        )
+        .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
     [tabItems, typeFilter, topicFilter, statusFilter],
   );
 
@@ -124,7 +126,9 @@ function RawFeedWorkbench() {
         })}
       </div>
 
-      <p className="mb-4 text-xs text-muted-foreground">{sourceClasses.find((s) => s.id === tab)!.description}</p>
+      <p className="mb-4 text-xs text-muted-foreground">
+        {sourceClasses.find((s) => s.id === tab)!.description}
+      </p>
 
       <div className="mb-4 flex flex-wrap items-center gap-4">
         <FilterRow
@@ -134,16 +138,6 @@ function RawFeedWorkbench() {
           options={[
             { value: "all", label: "全部" },
             ...riskTypes.map((t) => ({ value: t, label: riskTypeLabel[t] })),
-          ]}
-        />
-        <FilterRow
-          label="主题"
-          value={topicFilter}
-          onChange={setTopicFilter}
-          options={[
-            { value: "all", label: "全部" },
-            { value: "none", label: "无主题" },
-            ...topics.map((t) => ({ value: t, label: t })),
           ]}
         />
         <FilterRow
@@ -159,7 +153,9 @@ function RawFeedWorkbench() {
         />
       </div>
 
-      <Panel className="p-5 pb-24">
+      <TopicTagFilter value={topicFilter} onChange={setTopicFilter} />
+
+      <Panel className="mt-4 p-5 pb-24">
         {visible.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
             当前筛选条件下没有条目。
@@ -188,52 +184,25 @@ function RawFeedWorkbench() {
                     <span className="font-mono text-xs text-primary">{item.eventId}</span>
                   ) : null}
                 </div>
-                <div
-                  className={cn(
-                    "rounded-md border border-border p-4 transition-colors",
-                    selected.includes(item.id) && "border-primary bg-primary/5",
-                    item.status === "ignored" && "opacity-60",
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(item.id)}
-                      onChange={() => toggle(item.id)}
-                      aria-label={`选择 ${item.id}`}
-                      className="mt-1 h-4 w-4 accent-[oklch(0.34_0.07_240)]"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-baseline gap-2">
-                        <span className="text-sm font-semibold">{item.author}</span>
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {item.handle}
-                        </span>
-                        <span className="font-mono text-xs text-muted-foreground">{item.id}</span>
-                      </div>
-                      <p className="mt-1.5 text-sm">{item.text}</p>
-                      <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                        {item.riskType ? <Tag>{riskTypeLabel[item.riskType]}</Tag> : null}
-                        {item.topic ? <Tag>{item.topic}</Tag> : null}
-                        {item.region ? <Tag>{item.region}</Tag> : null}
-                        <Tag>{item.lang}</Tag>
-                        <span className="text-xs">
-                          <SourceLink href={item.url}>原文</SourceLink>
-                        </span>
-                        <span className="ml-auto flex gap-2">
-                          {item.status === "ignored" ? (
-                            <MiniButton onClick={() => restoreItems([item.id])}>恢复</MiniButton>
-                          ) : (
-                            <>
-                              <MiniButton onClick={() => setDrawerIds([item.id])}>提取</MiniButton>
-                              <MiniButton onClick={() => ignoreItems([item.id])}>忽略</MiniButton>
-                            </>
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {tab === "social" ? (
+                  <SocialCompactRow
+                    item={item}
+                    selected={selected.includes(item.id)}
+                    onToggle={() => toggle(item.id)}
+                    onExtract={() => setDrawerIds([item.id])}
+                    onIgnore={() => ignoreItems([item.id])}
+                    onRestore={() => restoreItems([item.id])}
+                  />
+                ) : (
+                  <DetailedCard
+                    item={item}
+                    selected={selected.includes(item.id)}
+                    onToggle={() => toggle(item.id)}
+                    onExtract={() => setDrawerIds([item.id])}
+                    onIgnore={() => ignoreItems([item.id])}
+                    onRestore={() => restoreItems([item.id])}
+                  />
+                )}
               </li>
             ))}
           </ol>
@@ -284,6 +253,172 @@ function RawFeedWorkbench() {
         />
       ) : null}
     </PageShell>
+  );
+}
+
+function TopicTagFilter({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const tags = [
+    { value: "all", label: "全部主题" },
+    { value: "none", label: "无主题" },
+    ...topics.map((t) => ({ value: t, label: t })),
+  ];
+  return (
+    <div className="mb-2 flex flex-wrap items-center gap-2">
+      <span className="text-xs tracking-wider text-muted-foreground uppercase">主题</span>
+      {tags.map((t) => {
+        const active = value === t.value;
+        return (
+          <button
+            key={t.value}
+            type="button"
+            onClick={() => onChange(t.value)}
+            className={cn(
+              "rounded-sm border px-2.5 py-1 text-xs transition-colors",
+              active
+                ? "border-primary bg-primary/10 font-medium text-primary"
+                : "border-border bg-surface text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SocialCompactRow({
+  item,
+  selected,
+  onToggle,
+  onExtract,
+  onIgnore,
+  onRestore,
+}: {
+  item: RawItem;
+  selected: boolean;
+  onToggle: () => void;
+  onExtract: () => void;
+  onIgnore: () => void;
+  onRestore: () => void;
+}) {
+  const [date, time] = item.publishedAt.split(" ");
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-md border border-border px-3 py-2.5 transition-colors",
+        selected && "border-primary bg-primary/5",
+        item.status === "ignored" && "opacity-60",
+      )}
+    >
+      <input
+        type="checkbox"
+        checked={selected}
+        onChange={onToggle}
+        aria-label={`选择 ${item.id}`}
+        className="h-4 w-4 accent-[oklch(0.34_0.07_240)]"
+      />
+      <div className="flex min-w-0 flex-1 items-center gap-4">
+        <div className="min-w-[140px] max-w-[200px]">
+          <p className="truncate text-sm font-semibold">{item.author}</p>
+          <p className="truncate font-mono text-xs text-muted-foreground">{item.handle}</p>
+        </div>
+        <div className="w-px self-stretch bg-border" aria-hidden />
+        <div className="min-w-[100px] font-mono text-xs tabular-nums text-muted-foreground">
+          <span>{date}</span>
+          <span className="mx-1">·</span>
+          <span>{time}</span>
+        </div>
+        <span
+          className={cn(
+            "rounded-sm px-2 py-0.5 text-xs",
+            item.status === "extracted"
+              ? "bg-primary/10 text-primary"
+              : item.status === "ignored"
+                ? "bg-muted/50 text-muted-foreground"
+                : "bg-destructive/10 text-destructive",
+          )}
+        >
+          {statusLabel[item.status]}
+        </span>
+        <span className="text-xs">
+          <SourceLink href={item.url}>原文</SourceLink>
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        {item.status === "ignored" ? (
+          <MiniButton onClick={onRestore}>恢复</MiniButton>
+        ) : (
+          <>
+            <MiniButton onClick={onExtract}>提取</MiniButton>
+            <MiniButton onClick={onIgnore}>忽略</MiniButton>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DetailedCard({
+  item,
+  selected,
+  onToggle,
+  onExtract,
+  onIgnore,
+  onRestore,
+}: {
+  item: RawItem;
+  selected: boolean;
+  onToggle: () => void;
+  onExtract: () => void;
+  onIgnore: () => void;
+  onRestore: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-md border border-border p-4 transition-colors",
+        selected && "border-primary bg-primary/5",
+        item.status === "ignored" && "opacity-60",
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggle}
+          aria-label={`选择 ${item.id}`}
+          className="mt-1 h-4 w-4 accent-[oklch(0.34_0.07_240)]"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <span className="text-sm font-semibold">{item.author}</span>
+            <span className="font-mono text-xs text-muted-foreground">{item.handle}</span>
+            <span className="font-mono text-xs text-muted-foreground">{item.id}</span>
+          </div>
+          <p className="mt-1.5 text-sm">{item.text}</p>
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            {item.riskType ? <Tag>{riskTypeLabel[item.riskType]}</Tag> : null}
+            {item.topic ? <Tag>{item.topic}</Tag> : null}
+            {item.region ? <Tag>{item.region}</Tag> : null}
+            <Tag>{item.lang}</Tag>
+            <span className="text-xs">
+              <SourceLink href={item.url}>原文</SourceLink>
+            </span>
+            <span className="ml-auto flex gap-2">
+              {item.status === "ignored" ? (
+                <MiniButton onClick={onRestore}>恢复</MiniButton>
+              ) : (
+                <>
+                  <MiniButton onClick={onExtract}>提取</MiniButton>
+                  <MiniButton onClick={onIgnore}>忽略</MiniButton>
+                </>
+              )}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
