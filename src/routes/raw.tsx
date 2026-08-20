@@ -130,15 +130,6 @@ function RawFeedWorkbench() {
 
       <div className="mb-4 flex flex-wrap items-center gap-4">
         <FilterRow
-          label="风险类型"
-          value={typeFilter}
-          onChange={(v) => setTypeFilter(v as RiskTypeId | "all")}
-          options={[
-            { value: "all", label: "全部" },
-            ...riskTypes.map((t) => ({ value: t, label: riskTypeLabel[t] })),
-          ]}
-        />
-        <FilterRow
           label="状态"
           value={statusFilter}
           onChange={(v) => setStatusFilter(v as RawStatus | "all")}
