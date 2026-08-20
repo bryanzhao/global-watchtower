@@ -38,7 +38,6 @@ function RawFeedWorkbench() {
   const { items, lastRefresh, pendingIncoming, refresh, ignoreItems, restoreItems, createEvent } =
     useWorkbench();
   const [tab, setTab] = useState<SourceClassId>("social");
-  const [typeFilter, setTypeFilter] = useState<RiskTypeId | "all">("all");
   const [topicFilter, setTopicFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<RawStatus | "all">("all");
   const [selected, setSelected] = useState<string[]>([]);
