@@ -17,7 +17,7 @@ export const Route = createFileRoute("/risk")({
       {
         name: "description",
         content:
-          "经 AI 与分析师筛选、去重与结构化后的风险事件时间线，含时间、地点、涉事主体、风险类型、主题与溯源原始条目。",
+          "经 AI 与分析师筛选、去重与结构化后的风险事件时间线，含时间、地点、涉事主体、主题与溯源原始条目。",
       },
       { property: "og:title", content: "风险信息流 · 全球安全风险监测平台" },
       {
