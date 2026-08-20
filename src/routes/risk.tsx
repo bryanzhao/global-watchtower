@@ -41,7 +41,6 @@ function RiskFeed() {
     () =>
       events.filter(
         (e) =>
-          (typeFilter === "all" || e.riskType === typeFilter) &&
           (levelFilter === "all" || e.level === levelFilter) &&
           (topicFilter === "all" ||
             (topicFilter === "none"
@@ -53,7 +52,7 @@ function RiskFeed() {
               (countryNameByCode[c] ?? "").includes(country.trim()),
             )),
       ),
-    [events, typeFilter, levelFilter, topicFilter, country],
+    [events, levelFilter, topicFilter, country],
   );
 
   const attachable = items.filter((i) => i.status === "new");
