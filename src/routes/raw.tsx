@@ -161,29 +161,35 @@ function RawFeedWorkbench() {
             当前筛选条件下没有条目。
           </p>
         ) : (
-          <ol className="relative border-l border-border pl-6">
+          <ol className={cn("relative pl-6", tab !== "social" && "border-l border-border")}>
             {visible.map((item) => (
               <li key={item.id} className="relative pb-6 last:pb-0">
-                <span
-                  className={cn(
-                    "absolute top-1.5 -left-[26px] h-2.5 w-2.5 rounded-full border-2 border-background",
-                    item.status === "extracted"
-                      ? "bg-primary"
-                      : item.status === "ignored"
-                        ? "bg-muted-foreground/40"
-                        : "bg-destructive",
-                  )}
-                  aria-hidden
-                />
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="font-mono text-xs text-muted-foreground tabular-nums">
-                    {item.publishedAt}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{statusLabel[item.status]}</span>
-                  {item.eventId ? (
-                    <span className="font-mono text-xs text-primary">{item.eventId}</span>
-                  ) : null}
-                </div>
+                {tab !== "social" ? (
+                  <>
+                    <span
+                      className={cn(
+                        "absolute top-1.5 -left-[26px] h-2.5 w-2.5 rounded-full border-2 border-background",
+                        item.status === "extracted"
+                          ? "bg-primary"
+                          : item.status === "ignored"
+                            ? "bg-muted-foreground/40"
+                            : "bg-destructive",
+                      )}
+                      aria-hidden
+                    />
+                    <div className="mb-1 flex items-center gap-2">
+                      <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                        {item.publishedAt}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {statusLabel[item.status]}
+                      </span>
+                      {item.eventId ? (
+                        <span className="font-mono text-xs text-primary">{item.eventId}</span>
+                      ) : null}
+                    </div>
+                  </>
+                ) : null}
                 {tab === "social" ? (
                   <SocialCompactRow
                     item={item}
