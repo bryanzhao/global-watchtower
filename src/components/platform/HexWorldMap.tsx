@@ -193,6 +193,7 @@ export function HexWorldMap({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onClick={onClickContainer}
         className="relative h-[460px] cursor-grab touch-none overflow-hidden rounded-md border border-border bg-surface active:cursor-grabbing"
       >
         <div
@@ -205,12 +206,10 @@ export function HexWorldMap({
               return (
                 <path
                   key={p.code}
+                  data-code={p.code}
                   d={p.d}
                   onMouseEnter={() => setHover(p.code)}
                   onMouseLeave={() => setHover((h) => (h === p.code ? null : h))}
-                  onClick={() => {
-                    if (!drag.current?.moved) onSelect(p.code);
-                  }}
                   className={cn(
                     "cursor-pointer transition-opacity",
                     agg ? levelFill[agg.level] : "fill-muted-foreground/25",
