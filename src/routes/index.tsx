@@ -13,6 +13,7 @@ import {
   timeWindowLabel,
   withinWindow,
   type TimeWindow,
+  eventCountryName,
   eventTopics } from "@/data/analytics";
 import { useWorkbench } from "@/state/workbench";
 import { cn } from "@/lib/utils";
@@ -46,10 +47,8 @@ function Overview() {
   const aggregates = useMemo(() => aggregateByCountry(events, win), [events, win]);
   const windowed = useMemo(() => events.filter((e) => withinWindow(e, win)), [events, win]);
 
-  const topCountries = useMemo(
-    () => [...aggregates.values()].sort((a, b) => b.count - a.count).slice(0, 6),
-    [aggregates],
-  );
+  const latest = useMemo(() => sortByTimeDesc(events).slice(0, 10), [events]);
+
 
   return (
     <PageShell
@@ -75,90 +74,85 @@ function Overview() {
       }
     >
       <div className="grid gap-5 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="space-y-5 lg:col-span-2">
           <Panel className="p-4">
             <HexWorldMap
               aggregates={aggregates}
               windowLabel={timeWindowLabel[win]}
               onSelect={(code) => navigate({ to: "/countries/$code", params: { code } })}
             />
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <SectionTitle>事件最集中国家</SectionTitle>
-                <ul className="space-y-1.5">
-                  {topCountries.length === 0 ? (
-                    <li className="text-sm text-muted-foreground">该时间窗内无已确认事件。</li>
-                  ) : (
-                    topCountries.map((c) => (
-                      <li key={c.code}>
-                        <Link
-                          to="/countries/$code"
-                          params={{ code: c.code }}
-                          className="flex items-center gap-2 rounded-sm px-2 py-1 text-sm transition-colors hover:bg-secondary"
-                        >
-                          <span className="font-mono text-xs text-muted-foreground">{c.code}</span>
-                          <span>{c.name}</span>
-                          <RiskBadge level={c.level} className="ml-auto" />
-                          <span className="w-6 text-right font-semibold tabular-nums">{c.count}</span>
-                        </Link>
-                      </li>
-                    ))
-                  )}
-                </ul>
-              </div>
-              <div>
-                <SectionTitle aside={`${windowed.length} 起`}>最新已确认事件</SectionTitle>
-                <ul className="space-y-1.5">
-                  {sortByTimeDesc(windowed)
-                    .slice(0, 5)
-                    .map((e) => (
-                      <li key={e.id} className="flex items-start gap-2 text-sm">
-                        <span className="font-mono text-xs text-muted-foreground tabular-nums">
-                          {e.occurredAt}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate">{e.title}</span>
-                        <Tag>{riskTypeLabel[e.riskType]}</Tag>
-                      </li>
-                    ))}
-                  {windowed.length === 0 ? (
-                    <li className="text-sm text-muted-foreground">暂无事件。</li>
-                  ) : null}
-                </ul>
-              </div>
-            </div>
           </Panel>
+
+          <div>
+            <SectionTitle aside="每小时刷新">重大议题</SectionTitle>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {topicProfiles.map((t) => {
+                const related = events.filter(
+                  (e) => eventTopics(e).includes(t.topic) && withinWindow(e, win),
+                );
+                return (
+                  <Link
+                    key={t.slug}
+                    to="/topics/$slug"
+                    params={{ slug: t.slug }}
+                    className="block rounded-md border border-border bg-card p-4 transition-colors hover:border-primary/50 hover:bg-secondary/40"
+                  >
+                    <div className="flex items-start gap-2">
+                      <h3 className="text-sm font-semibold">{t.name}</h3>
+                      <RiskBadge level={t.level} className="ml-auto" />
+                    </div>
+                    <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{t.headline}</p>
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <Tag>{topicStatusLabel[t.status]}</Tag>
+                      <span className="tabular-nums">
+                        {timeWindowLabel[win]} {related.length} 起
+                      </span>
+                      <span className="ml-auto inline-flex items-center gap-1 text-primary">
+                        进入议题
+                        <ArrowRight className="h-3 w-3" aria-hidden />
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-muted-foreground">概览更新于 {t.updatedAt}</p>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-3">
-          <SectionTitle aside="每小时刷新">重大议题</SectionTitle>
-          {topicProfiles.map((t) => {
-            const related = events.filter((e) => eventTopics(e).includes(t.topic) && withinWindow(e, win));
-            return (
-              <Link
-                key={t.slug}
-                to="/topics/$slug"
-                params={{ slug: t.slug }}
-                className="block rounded-md border border-border bg-card p-4 transition-colors hover:border-primary/50 hover:bg-secondary/40"
+          <SectionTitle aside={`${windowed.length} 起`}>最新风险信息</SectionTitle>
+          <ul className="space-y-2">
+            {latest.map((e) => (
+              <li
+                key={e.id}
+                className="rounded-md border border-border bg-card p-3 transition-colors hover:border-primary/50"
               >
-                <div className="flex items-start gap-2">
-                  <h3 className="text-sm font-semibold">{t.name}</h3>
-                  <RiskBadge level={t.level} className="ml-auto" />
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <span className="font-mono tabular-nums">{e.occurredAt}</span>
+                  <span>{eventCountryName(e)}</span>
+                  <RiskBadge level={e.level} className="ml-auto" />
                 </div>
-                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{t.headline}</p>
-                <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <Tag>{topicStatusLabel[t.status]}</Tag>
-                  <span className="tabular-nums">
-                    {timeWindowLabel[win]} {related.length} 起
-                  </span>
-                  <span className="ml-auto inline-flex items-center gap-1 text-primary">
-                    进入议题
-                    <ArrowRight className="h-3 w-3" aria-hidden />
-                  </span>
+                <p className="mt-1 text-sm leading-snug">{e.title}</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <Tag>{riskTypeLabel[e.riskType]}</Tag>
+                  {eventTopics(e).map((t) => (
+                    <Tag key={t}>{t}</Tag>
+                  ))}
                 </div>
-                <p className="mt-1 text-[10px] text-muted-foreground">概览更新于 {t.updatedAt}</p>
-              </Link>
-            );
-          })}
+              </li>
+            ))}
+            {latest.length === 0 ? (
+              <li className="text-sm text-muted-foreground">该时间窗内无已确认事件。</li>
+            ) : null}
+          </ul>
+          <Link
+            to="/risk"
+            className="flex items-center justify-center gap-1 rounded-md border border-border p-2.5 text-xs text-muted-foreground transition-colors hover:bg-secondary"
+          >
+            全部信息流
+            <ArrowRight className="h-3 w-3" aria-hidden />
+          </Link>
           <Link
             to="/countries"
             className="block rounded-md border border-dashed border-border p-3 text-center text-xs text-muted-foreground transition-colors hover:bg-secondary"
@@ -167,6 +161,7 @@ function Overview() {
           </Link>
         </div>
       </div>
+
     </PageShell>
   );
 }
