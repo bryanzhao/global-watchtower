@@ -117,6 +117,12 @@ function Overview() {
                 );
               })}
             </div>
+            <Link
+              to="/topics"
+              className="mt-3 block rounded-md border border-dashed border-border p-3 text-center text-xs text-muted-foreground transition-colors hover:bg-secondary"
+            >
+              查看全部专题 →
+            </Link>
           </div>
         </div>
 
@@ -152,12 +158,6 @@ function Overview() {
           >
             全部信息流
             <ArrowRight className="h-3 w-3" aria-hidden />
-          </Link>
-          <Link
-            to="/countries"
-            className="block rounded-md border border-dashed border-border p-3 text-center text-xs text-muted-foreground transition-colors hover:bg-secondary"
-          >
-            查看全部国别页 →
           </Link>
         </div>
       </div>
