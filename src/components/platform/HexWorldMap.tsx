@@ -124,6 +124,15 @@ export function HexWorldMap({
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
+  const onClickContainer = (e: React.MouseEvent) => {
+    // Ignore clicks that were part of a pan drag.
+    if (drag.current?.moved) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const path = el?.closest("svg path") as SVGPathElement | null;
+    const code = path?.getAttribute("data-code");
+    if (code) onSelect(code);
+  };
+
   const drag = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null);
 
   const onPointerDown = (e: React.PointerEvent) => {
